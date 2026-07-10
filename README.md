@@ -136,7 +136,8 @@ The database seeder pre-loads multiple test roles with preset configurations:
 
 | Role | Username / Phone | Password / OTP | Description & Capabilities |
 | :--- | :--- | :--- | :--- |
-| **Farmer** | Any 10-digit number (e.g., `9812345678`) | `123456` | Register crops, upload photos for AI analysis, and book slots. |
+| **Farmer** | Any 10-digit number (e.g., `9812345678`, `9876543201`) | `123456` | Register crops, upload photos for AI analysis, book slots, publish marketplace listings, manage customer orders, and view sales charts. |
+| **Customer** | `customer@farmer2gov.gov.in` (Password) or `9876543211` (OTP) | `customer123` or `123456` | Browse fresh farm produce, search by categories, apply coupons, add items to cart, checkout, complete simulated payments, download tax invoices, and track orders. |
 | **Procurement Officer** | `officer_1@farmer2gov.gov.in` | `officer123` | Inspect crop samples, weigh grains, approve status, and print receipts. |
 | **Administrator** | `admin@farmer2gov.gov.in` | `admin123` | View statistics, track state-level metrics, and view forecasts. |
 
@@ -163,6 +164,14 @@ To experience the full capability of the application, follow these user journeys
 ### 📊 Journey 3: The Admin Analytics Flow
 1. Log out and log in as the Administrator with `admin@farmer2gov.gov.in` and password `admin123`.
 2. Review the **Analytics Dashboard** showcasing crop distribution pie charts, state-wide registration metrics, and interactive timeline forecasts.
+
+### 🏪 Journey 4: The Direct-to-Customer (D2C) Marketplace Flow
+1. **Register/Login as a Customer**: Log out and log in using customer credentials (email `customer@farmer2gov.gov.in`, password `customer123`, or phone `9876543211` + OTP `123456`).
+2. **Browse the Marketplace**: View the Swiggy/Amazon style dashboard. Search for products, filter by categories (Grains, Pulses, Fruits, Vegetables, Organic), and bookmark items.
+3. **Cart Operations**: Add farm-fresh items to your cart, navigate to `/cart`, apply coupon code `F2G50` or `DIWALI100` to get discounts, and click "Proceed to Checkout".
+4. **Place Order**: Confirm your shipping coordinates, select a mock payment option (UPI/Card/COD), and click "Pay & Place Order".
+5. **View Invoice & Track Order**: Review your printable tax invoice, click "Track Order Live" to view the interactive Leaflet map showing the delivery courier rider's location and shipping checkpoints.
+6. **Farmer Fulfillment**: Log in as a Farmer (phone `9876543201`, OTP `123456`), go to the **"Marketplace Portal"** tab, verify the customer order, and change its status from "Pending" to "Confirmed" and then "Shipped".
 
 ---
 

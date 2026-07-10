@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Sprout, FileText, TrendingUp, Landmark, ChevronRight, Bell, Languages,
   LogOut, Search, Camera, Calendar, Clock, AlertTriangle,
-  CheckCircle, ArrowLeft, RefreshCw, X, Mic, AlertCircle, ShoppingBag, MapPin, Upload
+  CheckCircle, ArrowLeft, RefreshCw, X, Mic, AlertCircle, ShoppingBag, MapPin, Upload, Store
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
@@ -91,7 +91,7 @@ const FarmerDashboard: React.FC = () => {
 
 
   // Navigation / Tab states
-  const [activeTab, setActiveTab] = useState<'overview' | 'register' | 'register-produce' | 'msp' | 'procurement' | 'booking'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'register' | 'register-produce' | 'msp' | 'procurement' | 'booking' | 'marketplace'>('overview');
   const [registrations, setRegistrations] = useState<Registration[]>([]);
   const [selectedReg, setSelectedReg] = useState<Registration | null>(null);
   const [notifications, setNotifications] = useState<any[]>([]);
@@ -162,6 +162,107 @@ const FarmerDashboard: React.FC = () => {
   const [voiceText, setVoiceText] = useState('');
   const [voiceReply, setVoiceReply] = useState('');
   const [recognition, setRecognition] = useState<any>(null);
+
+  // Marketplace states
+  const [marketProducts, setMarketProducts] = useState<any[]>([]);
+  const [marketOrders, setMarketOrders] = useState<any[]>([]);
+  const [marketAnalytics, setMarketAnalytics] = useState<any>({ total_revenue: 0, orders_count: 0, products_count: 0 });
+  const [marketTab, setMarketTab] = useState<'products' | 'orders' | 'analytics'>('products');
+  const [newProductFormData, setNewProductFormData] = useState({
+    name: '',
+    description: '',
+    category: 'Grains',
+    price: '',
+    original_price: '',
+    stock: '',
+    unit: 'kg',
+    organic_badge: false,
+    freshness_badge: 'Freshly Harvested',
+    image_url: 'https://images.unsplash.com/photo-1574323347407-f5e1ad6d020b?auto=format&fit=crop&q=80&w=400'
+  });
+  const [loadingMarket, setLoadingMarket] = useState(false);
+
+  const fetchFarmerProducts = async () => {
+    setLoadingMarket(true);
+    try {
+      const data = await apiFetch('/api/marketplace/my-products');
+      setMarketProducts(data);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoadingMarket(false);
+    }
+  };
+
+  const fetchFarmerOrders = async () => {
+    try {
+      const data = await apiFetch('/api/marketplace/incoming-orders');
+      setMarketOrders(data);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const fetchFarmerAnalytics = async () => {
+    try {
+      const data = await apiFetch('/api/marketplace/earnings-analytics');
+      setMarketAnalytics(data);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleCreateProduct = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      await apiFetch('/api/marketplace/products', {
+        method: 'POST',
+        body: JSON.stringify({
+          name: newProductFormData.name,
+          description: newProductFormData.description,
+          category: newProductFormData.category,
+          price: parseFloat(newProductFormData.price),
+          original_price: parseFloat(newProductFormData.original_price || newProductFormData.price),
+          stock: parseFloat(newProductFormData.stock),
+          unit: newProductFormData.unit,
+          organic_badge: newProductFormData.organic_badge,
+          freshness_badge: newProductFormData.freshness_badge,
+          image_url: newProductFormData.image_url
+        })
+      });
+      alert("Product published to Marketplace successfully!");
+      setNewProductFormData({
+        name: '',
+        description: '',
+        category: 'Grains',
+        price: '',
+        original_price: '',
+        stock: '',
+        unit: 'kg',
+        organic_badge: false,
+        freshness_badge: 'Freshly Harvested',
+        image_url: 'https://images.unsplash.com/photo-1574323347407-f5e1ad6d020b?auto=format&fit=crop&q=80&w=400'
+      });
+      fetchFarmerProducts();
+      fetchFarmerAnalytics();
+    } catch (err: any) {
+      alert(err.message || "Failed to publish product.");
+    }
+  };
+
+  const handleUpdateOrderStatus = async (orderId: number, status: string) => {
+    try {
+      await apiFetch(`/api/marketplace/orders/${orderId}/status`, {
+        method: 'PATCH',
+        body: JSON.stringify({ status })
+      });
+      alert(`Order status updated to '${status}'!`);
+      fetchFarmerOrders();
+      fetchFarmerAnalytics();
+    } catch (err: any) {
+      alert(err.message || "Failed to update order status.");
+    }
+  };
 
   useEffect(() => {
     fetchDashboardData();
@@ -775,7 +876,8 @@ const FarmerDashboard: React.FC = () => {
               { id: 'register-produce', label: t('nav_register_produce'), icon: ShoppingBag },
               { id: 'msp', label: t('nav_msp_info'), icon: TrendingUp },
               { id: 'booking', label: t('slot_booking'), icon: Calendar },
-              { id: 'procurement', label: t('nav_my_procurement'), icon: Landmark }
+              { id: 'procurement', label: t('nav_my_procurement'), icon: Landmark },
+              { id: 'marketplace', label: 'Marketplace Portal', icon: Store }
             ].map((tab) => (
               <button
                 key={tab.id}
@@ -783,6 +885,11 @@ const FarmerDashboard: React.FC = () => {
                   setActiveTab(tab.id as any);
                   setSelectedReg(null);
                   if (tab.id === 'procurement') fetchProcurements();
+                  if (tab.id === 'marketplace') {
+                    fetchFarmerProducts();
+                    fetchFarmerOrders();
+                    fetchFarmerAnalytics();
+                  }
                 }}
                 className={`w-full flex items-center justify-between px-4 py-3 rounded-xl border text-xs font-bold transition-all cursor-pointer ${activeTab === tab.id
                   ? 'bg-emerald-600 border-emerald-650 text-white shadow-md'
@@ -2057,6 +2164,358 @@ const FarmerDashboard: React.FC = () => {
                       >
                         {t('close')}
                       </button>
+                    </div>
+                  </div>
+                )}
+              </motion.div>
+            )}
+
+            {/* 7. MARKETPLACE PORTAL TAB */}
+            {activeTab === 'marketplace' && (
+              <motion.div
+                initial={{ opacity: 0, y: 15 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="space-y-6 md:col-span-9"
+              >
+                {/* Title */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white border border-slate-200 rounded-3xl p-6 shadow-sm">
+                  <div>
+                    <h2 className="text-xl font-black text-slate-800 flex items-center gap-2">
+                      🏪 Marketplace Portal
+                    </h2>
+                    <p className="text-[10px] text-slate-450 uppercase tracking-widest font-extrabold mt-1">
+                      Direct-to-Customer (D2C) Kisan Trade
+                    </p>
+                  </div>
+                  
+                  {/* Sub-Tabs selector */}
+                  <div className="flex bg-slate-100 p-1 rounded-xl text-xs font-bold self-start sm:self-center">
+                    <button
+                      onClick={() => setMarketTab('products')}
+                      className={`px-4 py-2 rounded-lg cursor-pointer transition-all ${marketTab === 'products' ? 'bg-emerald-600 text-white shadow' : 'text-slate-500 hover:text-slate-800'}`}
+                    >
+                      My Products
+                    </button>
+                    <button
+                      onClick={() => setMarketTab('orders')}
+                      className={`px-4 py-2 rounded-lg cursor-pointer transition-all ${marketTab === 'orders' ? 'bg-emerald-600 text-white shadow' : 'text-slate-500 hover:text-slate-800'}`}
+                    >
+                      Incoming Orders
+                    </button>
+                    <button
+                      onClick={() => setMarketTab('analytics')}
+                      className={`px-4 py-2 rounded-lg cursor-pointer transition-all ${marketTab === 'analytics' ? 'bg-emerald-600 text-white shadow' : 'text-slate-500 hover:text-slate-800'}`}
+                    >
+                      Sales Analytics
+                    </button>
+                  </div>
+                </div>
+
+                {/* SUB TAB: PRODUCTS PORTFOLIO */}
+                {marketTab === 'products' && (
+                  <div className="grid gap-6 md:grid-cols-12">
+                    
+                    {/* Add Product Form (Col 5) */}
+                    <div className="md:col-span-5 bg-white border border-slate-200 rounded-3xl p-6 shadow-sm space-y-4">
+                      <h3 className="text-sm font-extrabold text-slate-900 uppercase tracking-wider flex items-center gap-1.5 border-b pb-2">
+                        ➕ Publish New Product
+                      </h3>
+                      <form onSubmit={handleCreateProduct} className="space-y-3.5">
+                        <div>
+                          <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">Product Name</label>
+                          <input
+                            type="text"
+                            required
+                            placeholder="e.g. Sona Masuri Rice, Organic Apples"
+                            value={newProductFormData.name}
+                            onChange={(e) => setNewProductFormData({...newProductFormData, name: e.target.value})}
+                            className="w-full text-xs font-semibold py-2.5 px-3.5 border rounded-xl bg-slate-50 focus:outline-none focus:border-emerald-500"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">Description</label>
+                          <textarea
+                            rows={2}
+                            placeholder="Describe organic farming methods, moisture level, etc."
+                            value={newProductFormData.description}
+                            onChange={(e) => setNewProductFormData({...newProductFormData, description: e.target.value})}
+                            className="w-full text-xs font-semibold py-2.5 px-3.5 border rounded-xl bg-slate-50 focus:outline-none focus:border-emerald-500"
+                          />
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">Category</label>
+                            <select
+                              value={newProductFormData.category}
+                              onChange={(e) => setNewProductFormData({...newProductFormData, category: e.target.value})}
+                              className="w-full text-xs font-semibold py-2.5 px-3 border rounded-xl bg-slate-50 focus:outline-none focus:border-emerald-500"
+                            >
+                              <option value="Grains">Grains</option>
+                              <option value="Pulses">Pulses</option>
+                              <option value="Fruits">Fruits</option>
+                              <option value="Vegetables">Vegetables</option>
+                              <option value="Organic">Organic Only</option>
+                            </select>
+                          </div>
+                          <div>
+                            <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">Quantity Unit</label>
+                            <select
+                              value={newProductFormData.unit}
+                              onChange={(e) => setNewProductFormData({...newProductFormData, unit: e.target.value})}
+                              className="w-full text-xs font-semibold py-2.5 px-3 border rounded-xl bg-slate-50 focus:outline-none focus:border-emerald-500"
+                            >
+                              <option value="kg">kg</option>
+                              <option value="quintal">quintal</option>
+                              <option value="bag">bag</option>
+                              <option value="bunch">bunch</option>
+                            </select>
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-3 gap-3">
+                          <div className="col-span-1">
+                            <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">Price (₹)</label>
+                            <input
+                              type="number"
+                              required
+                              placeholder="Price"
+                              value={newProductFormData.price}
+                              onChange={(e) => setNewProductFormData({...newProductFormData, price: e.target.value})}
+                              className="w-full text-xs font-semibold py-2 px-3 border rounded-xl bg-slate-50 focus:outline-none"
+                            />
+                          </div>
+                          <div className="col-span-1">
+                            <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">Original (₹)</label>
+                            <input
+                              type="number"
+                              placeholder="Before disc."
+                              value={newProductFormData.original_price}
+                              onChange={(e) => setNewProductFormData({...newProductFormData, original_price: e.target.value})}
+                              className="w-full text-xs font-semibold py-2 px-3 border rounded-xl bg-slate-50 focus:outline-none"
+                            />
+                          </div>
+                          <div className="col-span-1">
+                            <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">Stock</label>
+                            <input
+                              type="number"
+                              required
+                              placeholder="Stock"
+                              value={newProductFormData.stock}
+                              onChange={(e) => setNewProductFormData({...newProductFormData, stock: e.target.value})}
+                              className="w-full text-xs font-semibold py-2 px-3 border rounded-xl bg-slate-50 focus:outline-none"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="flex gap-4 py-1.5 text-xs font-bold text-slate-600">
+                          <label className="flex items-center gap-1.5 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={newProductFormData.organic_badge}
+                              onChange={(e) => setNewProductFormData({...newProductFormData, organic_badge: e.target.checked})}
+                              className="rounded text-emerald-600 focus:ring-emerald-500 h-4 w-4"
+                            />
+                            Leaflet Organic Verified
+                          </label>
+                        </div>
+
+                        <div>
+                          <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">Freshness Status Banner</label>
+                          <input
+                            type="text"
+                            value={newProductFormData.freshness_badge}
+                            onChange={(e) => setNewProductFormData({...newProductFormData, freshness_badge: e.target.value})}
+                            className="w-full text-xs font-semibold py-2 px-3 border rounded-xl bg-slate-50"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">Product Photo URL</label>
+                          <input
+                            type="text"
+                            value={newProductFormData.image_url}
+                            onChange={(e) => setNewProductFormData({...newProductFormData, image_url: e.target.value})}
+                            className="w-full text-xs font-semibold py-2 px-3 border rounded-xl bg-slate-50"
+                          />
+                        </div>
+
+                        <button
+                          type="submit"
+                          className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold rounded-xl text-xs uppercase tracking-wider transition-all cursor-pointer shadow-md"
+                        >
+                          Publish to Mandi
+                        </button>
+                      </form>
+                    </div>
+
+                    {/* Products Grid (Col 7) */}
+                    <div className="md:col-span-7 space-y-4">
+                      <h3 className="text-sm font-extrabold text-slate-900 uppercase tracking-wider flex items-center gap-2">
+                        🌾 Published Produce ({marketProducts.length})
+                      </h3>
+                      
+                      {loadingMarket ? (
+                        <div className="text-center py-20 bg-white border rounded-3xl">
+                          <div className="animate-spin h-6 w-6 border-2 border-emerald-600 border-t-transparent rounded-full mx-auto" />
+                        </div>
+                      ) : (
+                        <div className="grid gap-4 sm:grid-cols-2">
+                          {marketProducts.map((p) => (
+                            <div key={p.id} className="bg-white border rounded-2xl overflow-hidden shadow-sm flex flex-col justify-between">
+                              <div className="relative h-32 bg-slate-100">
+                                <img src={p.image_url} alt={p.name} className="h-full w-full object-cover" />
+                                {p.organic_badge && (
+                                  <span className="absolute top-2 left-2 bg-teal-600 text-white text-[8px] font-extrabold px-2 py-0.5 rounded">Organic</span>
+                                )}
+                              </div>
+                              <div className="p-4 space-y-2.5 flex-1 flex flex-col justify-between">
+                                <div>
+                                  <h4 className="text-xs font-extrabold text-slate-900">{p.name}</h4>
+                                  <p className="text-[10px] text-slate-400 font-semibold line-clamp-1">{p.category} • ₹{p.price} / {p.unit}</p>
+                                </div>
+                                <div className="flex justify-between items-center text-[10px] font-bold border-t pt-2">
+                                  <span className="text-slate-500">Stock: {p.stock} {p.unit}</span>
+                                  <span className="text-amber-500">★ {p.rating} / 5</span>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+
+                          {marketProducts.length === 0 && (
+                            <div className="col-span-full text-center py-20 bg-white border rounded-3xl text-slate-400 font-bold">
+                              No products published yet. Create one!
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* SUB TAB: INCOMING CUSTOMER ORDERS */}
+                {marketTab === 'orders' && (
+                  <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm space-y-4">
+                    <h3 className="text-sm font-extrabold text-slate-900 uppercase tracking-wider">
+                      📥 Customer Orders
+                    </h3>
+
+                    <div className="space-y-4">
+                      {marketOrders.map((ord) => (
+                        <div key={ord.id} className="border rounded-2xl p-5 space-y-4 shadow-sm hover:shadow transition-all">
+                          <div className="flex justify-between items-start border-b pb-3 mb-1">
+                            <div>
+                              <h4 className="text-xs font-extrabold text-slate-900">Order Ref: #{ord.order_number}</h4>
+                              <p className="text-[9px] text-slate-400">Placed: {new Date(ord.created_at).toLocaleDateString()}</p>
+                            </div>
+                            <div className="text-right">
+                              <span className={`inline-block text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-full border ${
+                                ord.status === 'Confirmed' ? 'bg-blue-50 border-blue-100 text-blue-700' :
+                                ord.status === 'Shipped' ? 'bg-orange-50 border-orange-100 text-orange-700' :
+                                ord.status === 'Delivered' ? 'bg-emerald-50 border-emerald-100 text-emerald-700' :
+                                'bg-slate-50 border-slate-200 text-slate-700'
+                              }`}>{ord.status}</span>
+                              <p className="text-xs font-extrabold text-emerald-650 mt-1">Payout: ₹{ord.total_price}</p>
+                            </div>
+                          </div>
+
+                          <div className="space-y-2 text-xs font-semibold text-slate-600">
+                            {ord.items.map((item: any) => (
+                              <div key={item.id} className="flex justify-between">
+                                <span>{item.product_name} x{item.quantity}</span>
+                                <span className="text-slate-900 font-bold">₹{item.price * item.quantity}</span>
+                              </div>
+                            ))}
+                          </div>
+
+                          <div className="bg-slate-50 p-3 rounded-xl text-[10px] text-slate-500 font-semibold border">
+                            📍 Shipping Address: <span className="text-slate-800">{ord.shipping_address}</span>
+                          </div>
+
+                          {/* Order State Action buttons */}
+                          <div className="flex gap-2 justify-end pt-2 border-t">
+                            {ord.status === 'Pending' && (
+                              <>
+                                <button
+                                  onClick={() => handleUpdateOrderStatus(ord.id, 'Confirmed')}
+                                  className="px-4 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-extrabold rounded-lg shadow cursor-pointer"
+                                >
+                                  Confirm Order
+                                </button>
+                                <button
+                                  onClick={() => handleUpdateOrderStatus(ord.id, 'Rejected')}
+                                  className="px-4 py-1.5 bg-red-50 hover:bg-red-100 text-red-655 text-[10px] font-extrabold rounded-lg cursor-pointer"
+                                >
+                                  Reject
+                                </button>
+                              </>
+                            )}
+
+                            {ord.status === 'Confirmed' && (
+                              <button
+                                onClick={() => handleUpdateOrderStatus(ord.id, 'Shipped')}
+                                className="px-4 py-1.5 bg-orange-600 hover:bg-orange-700 text-white text-[10px] font-extrabold rounded-lg shadow cursor-pointer"
+                              >
+                                Ship Order (Handover courier)
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+
+                      {marketOrders.length === 0 && (
+                        <div className="text-center py-20 text-slate-400 font-bold">
+                          No incoming customer orders.
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* SUB TAB: EARNINGS SALES ANALYTICS */}
+                {marketTab === 'analytics' && (
+                  <div className="space-y-6">
+                    {/* Analytics stats */}
+                    <div className="grid gap-4 sm:grid-cols-3">
+                      <div className="bg-white border rounded-3xl p-6 shadow-sm space-y-2">
+                        <span className="text-[10px] uppercase font-bold text-slate-400">Direct Mandi Sales</span>
+                        <h4 className="text-2xl font-black text-slate-800">₹{marketAnalytics.total_revenue}</h4>
+                        <p className="text-[9px] text-emerald-650 font-bold uppercase">100% Escrow Disbursed</p>
+                      </div>
+
+                      <div className="bg-white border rounded-3xl p-6 shadow-sm space-y-2">
+                        <span className="text-[10px] uppercase font-bold text-slate-400">Active Orders</span>
+                        <h4 className="text-2xl font-black text-slate-800">{marketAnalytics.orders_count}</h4>
+                        <p className="text-[9px] text-slate-400 font-bold uppercase">Incoming customers</p>
+                      </div>
+
+                      <div className="bg-white border rounded-3xl p-6 shadow-sm space-y-2">
+                        <span className="text-[10px] uppercase font-bold text-slate-400">D2C Listings</span>
+                        <h4 className="text-2xl font-black text-slate-800">{marketAnalytics.products_count}</h4>
+                        <p className="text-[9px] text-slate-400 font-bold uppercase">Listed on Mandi Grid</p>
+                      </div>
+                    </div>
+
+                    {/* Sales chart placeholder */}
+                    <div className="bg-white border rounded-3xl p-6 shadow-sm space-y-4">
+                      <h3 className="text-sm font-extrabold text-slate-900 uppercase tracking-wider">Weekly Revenue Analytics</h3>
+                      <div className="h-44 bg-slate-50 border rounded-2xl flex items-end justify-between p-4 relative pt-10">
+                        <div className="absolute top-4 left-4 text-[10px] font-bold text-slate-400">Values in ₹ (INR)</div>
+                        {/* Weekly bars */}
+                        <div className="w-12 bg-emerald-100 rounded-t-lg h-[40%] flex flex-col justify-end text-center pb-2 text-[9px] font-bold text-emerald-800">
+                          ₹2.4k <span className="text-[8px] text-slate-400 uppercase mt-1">Wk 1</span>
+                        </div>
+                        <div className="w-12 bg-emerald-200 rounded-t-lg h-[60%] flex flex-col justify-end text-center pb-2 text-[9px] font-bold text-emerald-800">
+                          ₹4.2k <span className="text-[8px] text-slate-400 uppercase mt-1">Wk 2</span>
+                        </div>
+                        <div className="w-12 bg-emerald-300 rounded-t-lg h-[80%] flex flex-col justify-end text-center pb-2 text-[9px] font-bold text-emerald-800">
+                          ₹7.1k <span className="text-[8px] text-slate-400 uppercase mt-1">Wk 3</span>
+                        </div>
+                        <div className="w-12 bg-emerald-600 rounded-t-lg h-[95%] flex flex-col justify-end text-center pb-2 text-[9px] font-bold text-white">
+                          ₹11.8k <span className="text-[8px] text-white/85 uppercase mt-1">Wk 4</span>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 )}

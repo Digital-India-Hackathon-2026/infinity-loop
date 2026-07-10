@@ -359,3 +359,202 @@ class AuditLogResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+# --- Customer Marketplace Schemas ---
+
+class CustomerCreate(BaseModel):
+    name: str
+    email: EmailStr
+    phone: str = Field(..., pattern=r"^\d{10}$")
+    password: str
+    address: str
+    state: str
+    district: str
+    pincode: str = Field(..., pattern=r"^\d{6}$")
+    profile_photo: Optional[str] = None
+
+
+class CustomerResponse(BaseModel):
+    id: int
+    user_id: int
+    customer_id: str
+    address: str
+    state: str
+    district: str
+    pincode: str
+    profile_photo: Optional[str] = None
+    created_at: datetime
+    user: UserResponse
+
+    class Config:
+        from_attributes = True
+
+
+class MarketplaceProductCreate(BaseModel):
+    name: str
+    description: Optional[str] = None
+    category: str
+    price: float
+    original_price: float
+    discount: Optional[float] = 0.0
+    stock: float
+    unit: Optional[str] = "kg"
+    image_url: Optional[str] = None
+    harvest_date: Optional[str] = None
+    freshness_badge: Optional[str] = "Fresh"
+    organic_badge: Optional[bool] = False
+    government_verified: Optional[bool] = False
+
+
+class MarketplaceProductResponse(BaseModel):
+    id: int
+    farmer_id: int
+    name: str
+    description: Optional[str] = None
+    category: str
+    price: float
+    original_price: float
+    discount: float
+    stock: float
+    unit: str
+    rating: float
+    image_url: Optional[str] = None
+    harvest_date: Optional[str] = None
+    freshness_badge: str
+    organic_badge: bool
+    government_verified: bool
+    created_at: datetime
+    farmer_name: Optional[str] = None
+    farmer_village: Optional[str] = None
+    farmer_district: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+
+
+class CartItemCreate(BaseModel):
+    product_id: int
+    quantity: float
+
+
+class CartItemResponse(BaseModel):
+    id: int
+    cart_id: int
+    product_id: int
+    quantity: float
+    product: MarketplaceProductResponse
+
+    class Config:
+        from_attributes = True
+
+
+class CartResponse(BaseModel):
+    id: int
+    customer_id: int
+    items: List[CartItemResponse] = []
+
+    class Config:
+        from_attributes = True
+
+
+class OrderItemCreate(BaseModel):
+    product_id: int
+    quantity: float
+
+
+class OrderItemResponse(BaseModel):
+    id: int
+    order_id: int
+    product_id: Optional[int] = None
+    product_name: str
+    price: float
+    quantity: float
+
+    class Config:
+        from_attributes = True
+
+
+class MarketplacePaymentResponse(BaseModel):
+    id: int
+    order_id: int
+    amount: float
+    payment_method: str
+    status: str
+    transaction_reference: Optional[str] = None
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class DeliveryResponse(BaseModel):
+    id: int
+    order_id: int
+    delivery_agent: str
+    delivery_phone: str
+    estimated_time: str
+    status: str
+    latitude: float
+    longitude: float
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class OrderCreate(BaseModel):
+    shipping_address: str
+    coupon_code: Optional[str] = None
+    payment_method: str # "UPI", "Credit Card", "Debit Card", "Net Banking", "Cash on Delivery"
+    card_number: Optional[str] = None
+    upi_id: Optional[str] = None
+
+
+class OrderResponse(BaseModel):
+    id: int
+    order_number: str
+    customer_id: int
+    total_price: float
+    delivery_charges: float
+    tax: float
+    grand_total: float
+    shipping_address: str
+    coupon_code: Optional[str] = None
+    status: str
+    created_at: datetime
+    items: List[OrderItemResponse] = []
+    payment: Optional[MarketplacePaymentResponse] = None
+    delivery: Optional[DeliveryResponse] = None
+
+    class Config:
+        from_attributes = True
+
+
+class ProductReviewCreate(BaseModel):
+    rating: int = Field(..., ge=1, le=5)
+    comment: Optional[str] = None
+
+
+class ProductReviewResponse(BaseModel):
+    id: int
+    product_id: int
+    customer_id: int
+    rating: int
+    comment: Optional[str] = None
+    created_at: datetime
+    customer_name: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+
+
+class CouponResponse(BaseModel):
+    id: int
+    code: str
+    discount_amount: float
+    min_purchase: float
+    active: bool
+
+    class Config:
+        from_attributes = True

@@ -18,6 +18,7 @@ class User(Base):
     farmer_profile = relationship("Farmer", back_populates="user", uselist=False, cascade="all, delete-orphan")
     officer_profile = relationship("Officer", back_populates="user", uselist=False, cascade="all, delete-orphan")
     admin_profile = relationship("Administrator", back_populates="user", uselist=False, cascade="all, delete-orphan")
+    customer_profile = relationship("Customer", back_populates="user", uselist=False, cascade="all, delete-orphan")
     notifications = relationship("Notification", back_populates="user", cascade="all, delete-orphan")
     audit_logs = relationship("AuditLog", back_populates="user", cascade="all, delete-orphan")
 
@@ -38,6 +39,7 @@ class Farmer(Base):
     user = relationship("User", back_populates="farmer_profile")
     registrations = relationship("CropRegistration", back_populates="farmer", cascade="all, delete-orphan")
     payments = relationship("Payment", back_populates="farmer", cascade="all, delete-orphan")
+    marketplace_products = relationship("MarketplaceProduct", back_populates="farmer", cascade="all, delete-orphan")
 
 
 class Officer(Base):
@@ -269,3 +271,175 @@ class AuditLog(Base):
     timestamp = Column(DateTime, default=datetime.datetime.utcnow)
 
     user = relationship("User", back_populates="audit_logs")
+
+
+class Customer(Base):
+    __tablename__ = "customers"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    customer_id = Column(String, unique=True, index=True, nullable=False)
+    address = Column(String, nullable=False)
+    state = Column(String, nullable=False)
+    district = Column(String, nullable=False)
+    pincode = Column(String, nullable=False)
+    profile_photo = Column(String, nullable=True)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+
+    user = relationship("User", back_populates="customer_profile")
+    cart = relationship("Cart", back_populates="customer", uselist=False, cascade="all, delete-orphan")
+    wishlists = relationship("Wishlist", back_populates="customer", cascade="all, delete-orphan")
+    orders = relationship("Order", back_populates="customer", cascade="all, delete-orphan")
+    reviews = relationship("ProductReview", back_populates="customer", cascade="all, delete-orphan")
+
+
+class MarketplaceProduct(Base):
+    __tablename__ = "marketplace_products"
+
+    id = Column(Integer, primary_key=True, index=True)
+    farmer_id = Column(Integer, ForeignKey("farmers.id", ondelete="CASCADE"), nullable=False)
+    name = Column(String, nullable=False)
+    description = Column(Text, nullable=True)
+    category = Column(String, nullable=False)
+    price = Column(Float, nullable=False)
+    original_price = Column(Float, nullable=False)
+    discount = Column(Float, default=0.0)
+    stock = Column(Float, nullable=False)
+    unit = Column(String, default="kg")
+    rating = Column(Float, default=5.0)
+    image_url = Column(String, nullable=True)
+    harvest_date = Column(String, nullable=True)
+    freshness_badge = Column(String, default="Fresh")
+    organic_badge = Column(Boolean, default=False)
+    government_verified = Column(Boolean, default=False)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+
+    farmer = relationship("Farmer", back_populates="marketplace_products")
+    cart_items = relationship("CartItem", back_populates="product", cascade="all, delete-orphan")
+    wishlist_items = relationship("Wishlist", back_populates="product", cascade="all, delete-orphan")
+    order_items = relationship("OrderItem", back_populates="product")
+    reviews = relationship("ProductReview", back_populates="product", cascade="all, delete-orphan")
+
+
+class Cart(Base):
+    __tablename__ = "carts"
+
+    id = Column(Integer, primary_key=True, index=True)
+    customer_id = Column(Integer, ForeignKey("customers.id", ondelete="CASCADE"), nullable=False)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+
+    customer = relationship("Customer", back_populates="cart")
+    items = relationship("CartItem", back_populates="cart", cascade="all, delete-orphan")
+
+
+class CartItem(Base):
+    __tablename__ = "cart_items"
+
+    id = Column(Integer, primary_key=True, index=True)
+    cart_id = Column(Integer, ForeignKey("carts.id", ondelete="CASCADE"), nullable=False)
+    product_id = Column(Integer, ForeignKey("marketplace_products.id", ondelete="CASCADE"), nullable=False)
+    quantity = Column(Float, default=1.0)
+
+    cart = relationship("Cart", back_populates="items")
+    product = relationship("MarketplaceProduct", back_populates="cart_items")
+
+
+class Wishlist(Base):
+    __tablename__ = "wishlists"
+
+    id = Column(Integer, primary_key=True, index=True)
+    customer_id = Column(Integer, ForeignKey("customers.id", ondelete="CASCADE"), nullable=False)
+    product_id = Column(Integer, ForeignKey("marketplace_products.id", ondelete="CASCADE"), nullable=False)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+
+    customer = relationship("Customer", back_populates="wishlists")
+    product = relationship("MarketplaceProduct", back_populates="wishlist_items")
+
+
+class Order(Base):
+    __tablename__ = "orders"
+
+    id = Column(Integer, primary_key=True, index=True)
+    order_number = Column(String, unique=True, index=True, nullable=False)
+    customer_id = Column(Integer, ForeignKey("customers.id", ondelete="CASCADE"), nullable=False)
+    total_price = Column(Float, nullable=False)
+    delivery_charges = Column(Float, default=0.0)
+    tax = Column(Float, default=0.0)
+    grand_total = Column(Float, nullable=False)
+    shipping_address = Column(Text, nullable=False)
+    coupon_code = Column(String, nullable=True)
+    status = Column(String, default="Order Placed")
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+
+    customer = relationship("Customer", back_populates="orders")
+    items = relationship("OrderItem", back_populates="order", cascade="all, delete-orphan")
+    payment = relationship("MarketplacePayment", back_populates="order", uselist=False, cascade="all, delete-orphan")
+    delivery = relationship("Delivery", back_populates="order", uselist=False, cascade="all, delete-orphan")
+
+
+class OrderItem(Base):
+    __tablename__ = "order_items"
+
+    id = Column(Integer, primary_key=True, index=True)
+    order_id = Column(Integer, ForeignKey("orders.id", ondelete="CASCADE"), nullable=False)
+    product_id = Column(Integer, ForeignKey("marketplace_products.id", ondelete="SET NULL"), nullable=True)
+    product_name = Column(String, nullable=False)
+    price = Column(Float, nullable=False)
+    quantity = Column(Float, nullable=False)
+
+    order = relationship("Order", back_populates="items")
+    product = relationship("MarketplaceProduct", back_populates="order_items")
+
+
+class MarketplacePayment(Base):
+    __tablename__ = "marketplace_payments"
+
+    id = Column(Integer, primary_key=True, index=True)
+    order_id = Column(Integer, ForeignKey("orders.id", ondelete="CASCADE"), nullable=False)
+    amount = Column(Float, nullable=False)
+    payment_method = Column(String, nullable=False) # "UPI", "Credit Card", "Debit Card", "Net Banking", "Cash on Delivery"
+    status = Column(String, default="Completed")
+    transaction_reference = Column(String, unique=True, index=True, nullable=True)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+
+    order = relationship("Order", back_populates="payment")
+
+
+class Delivery(Base):
+    __tablename__ = "deliveries"
+
+    id = Column(Integer, primary_key=True, index=True)
+    order_id = Column(Integer, ForeignKey("orders.id", ondelete="CASCADE"), nullable=False)
+    delivery_agent = Column(String, default="Rajesh Kumar")
+    delivery_phone = Column(String, default="9876543210")
+    estimated_time = Column(String, default="35 mins")
+    status = Column(String, default="Order Placed")
+    latitude = Column(Float, default=17.9784)
+    longitude = Column(Float, default=79.5941)
+    updated_at = Column(DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
+
+    order = relationship("Order", back_populates="delivery")
+
+
+class ProductReview(Base):
+    __tablename__ = "product_reviews"
+
+    id = Column(Integer, primary_key=True, index=True)
+    product_id = Column(Integer, ForeignKey("marketplace_products.id", ondelete="CASCADE"), nullable=False)
+    customer_id = Column(Integer, ForeignKey("customers.id", ondelete="CASCADE"), nullable=False)
+    rating = Column(Integer, nullable=False)
+    comment = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+
+    product = relationship("MarketplaceProduct", back_populates="reviews")
+    customer = relationship("Customer", back_populates="reviews")
+
+
+class Coupon(Base):
+    __tablename__ = "coupons"
+
+    id = Column(Integer, primary_key=True, index=True)
+    code = Column(String, unique=True, index=True, nullable=False)
+    discount_amount = Column(Float, nullable=False)
+    min_purchase = Column(Float, default=0.0)
+    active = Column(Boolean, default=True)

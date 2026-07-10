@@ -997,3 +997,782 @@ def get_admin_analytics(current_user: models.User = Depends(auth.require_role(["
         "status_distribution": status_dist,
         "payment_distribution": payment_dist
     }
+
+
+# --- CUSTOMER MARKETPLACE ENDPOINTS ---
+
+@app.post("/api/auth/register/customer", response_model=dict)
+def register_customer(payload: schemas.CustomerCreate, db: Session = Depends(get_db)):
+    """Registers a new Customer user and creates their profile and cart."""
+    # Check if user already exists
+    existing_user = db.query(models.User).filter(
+        (models.User.phone == payload.phone) | (models.User.email == payload.email)
+    ).first()
+    if existing_user:
+        raise HTTPException(status_code=400, detail="User with this email or phone already registered.")
+        
+    # Create user
+    user = models.User(
+        name=payload.name,
+        phone=payload.phone,
+        email=payload.email,
+        hashed_password=auth.get_password_hash(payload.password),
+        role="customer"
+    )
+    db.add(user)
+    db.commit()
+    db.refresh(user)
+    
+    # Create Customer Profile
+    year = datetime.datetime.utcnow().year
+    count = db.query(models.Customer).count()
+    cust_id = f"F2G-CUST-{year}-{1001 + count}"
+    
+    customer = models.Customer(
+        user_id=user.id,
+        customer_id=cust_id,
+        address=payload.address,
+        state=payload.state,
+        district=payload.district,
+        pincode=payload.pincode,
+        profile_photo=payload.profile_photo
+    )
+    db.add(customer)
+    db.commit()
+    db.refresh(customer)
+    
+    # Create an empty cart for the customer
+    cart = models.Cart(customer_id=customer.id)
+    db.add(cart)
+    db.commit()
+    
+    log_audit(db, user.id, "CUSTOMER_REGISTER", f"Customer registered successfully with ID {cust_id}")
+    
+    return {"success": True, "message": "Customer registered successfully. Please login."}
+
+
+# -- Marketplace Products --
+
+@app.get("/api/marketplace/products", response_model=List[schemas.MarketplaceProductResponse])
+def get_products(
+    q: Optional[str] = None,
+    category: Optional[str] = None,
+    organic: Optional[bool] = None,
+    min_price: Optional[float] = None,
+    max_price: Optional[float] = None,
+    min_rating: Optional[float] = None,
+    db: Session = Depends(get_db)
+):
+    """Fetches all marketplace products with optional search and filters."""
+    query = db.query(models.MarketplaceProduct).join(models.Farmer).join(models.User)
+    
+    if category and category.lower() != "all":
+        query = query.filter(models.MarketplaceProduct.category == category)
+        
+    if organic is not None:
+        query = query.filter(models.MarketplaceProduct.organic_badge == organic)
+        
+    if min_price is not None:
+        query = query.filter(models.MarketplaceProduct.price >= min_price)
+        
+    if max_price is not None:
+        query = query.filter(models.MarketplaceProduct.price <= max_price)
+        
+    if min_rating is not None:
+        query = query.filter(models.MarketplaceProduct.rating >= min_rating)
+        
+    products = query.all()
+    
+    # Format response with farmer information
+    results = []
+    for p in products:
+        item = schemas.MarketplaceProductResponse.from_orm(p)
+        item.farmer_name = p.farmer.user.name
+        item.farmer_village = p.farmer.village
+        item.farmer_district = p.farmer.district
+        
+        # Apply global search query filter
+        if q:
+            search_str = f"{p.name} {p.description or ''} {p.category} {p.farmer.user.name} {p.farmer.village} {p.farmer.district}".lower()
+            if q.lower() in search_str:
+                results.append(item)
+        else:
+            results.append(item)
+            
+    return results
+
+
+@app.get("/api/marketplace/products/{id}", response_model=schemas.MarketplaceProductResponse)
+def get_product(id: int, db: Session = Depends(get_db)):
+    """Fetches a single marketplace product detail."""
+    p = db.query(models.MarketplaceProduct).filter(models.MarketplaceProduct.id == id).first()
+    if not p:
+        raise HTTPException(status_code=404, detail="Product not found.")
+        
+    item = schemas.MarketplaceProductResponse.from_orm(p)
+    item.farmer_name = p.farmer.user.name
+    item.farmer_village = p.farmer.village
+    item.farmer_district = p.farmer.district
+    return item
+
+
+@app.post("/api/marketplace/products", response_model=schemas.MarketplaceProductResponse)
+def create_product(
+    payload: schemas.MarketplaceProductCreate,
+    current_user: models.User = Depends(auth.require_role(["farmer"])),
+    db: Session = Depends(get_db)
+):
+    """Farmer publishes a new product to the marketplace."""
+    farmer = db.query(models.Farmer).filter(models.Farmer.user_id == current_user.id).first()
+    if not farmer:
+        raise HTTPException(status_code=404, detail="Farmer profile not found.")
+        
+    p = models.MarketplaceProduct(
+        farmer_id=farmer.id,
+        name=payload.name,
+        description=payload.description,
+        category=payload.category,
+        price=payload.price,
+        original_price=payload.original_price,
+        discount=payload.discount,
+        stock=payload.stock,
+        unit=payload.unit,
+        image_url=payload.image_url,
+        harvest_date=payload.harvest_date,
+        freshness_badge=payload.freshness_badge,
+        organic_badge=payload.organic_badge,
+        government_verified=payload.government_verified
+    )
+    db.add(p)
+    db.commit()
+    db.refresh(p)
+    
+    log_audit(db, current_user.id, "PRODUCT_CREATE", f"Product '{payload.name}' created by farmer {farmer.id}")
+    
+    item = schemas.MarketplaceProductResponse.from_orm(p)
+    item.farmer_name = current_user.name
+    item.farmer_village = farmer.village
+    item.farmer_district = farmer.district
+    return item
+
+
+@app.put("/api/marketplace/products/{id}", response_model=schemas.MarketplaceProductResponse)
+def update_product(
+    id: int,
+    payload: schemas.MarketplaceProductCreate,
+    current_user: models.User = Depends(auth.require_role(["farmer"])),
+    db: Session = Depends(get_db)
+):
+    """Farmer updates their published product details."""
+    farmer = db.query(models.Farmer).filter(models.Farmer.user_id == current_user.id).first()
+    p = db.query(models.MarketplaceProduct).filter(
+        models.MarketplaceProduct.id == id,
+        models.MarketplaceProduct.farmer_id == farmer.id
+    ).first()
+    if not p:
+        raise HTTPException(status_code=404, detail="Product not found or not owned by you.")
+        
+    p.name = payload.name
+    p.description = payload.description
+    p.category = payload.category
+    p.price = payload.price
+    p.original_price = payload.original_price
+    p.discount = payload.discount
+    p.stock = payload.stock
+    p.unit = payload.unit
+    if payload.image_url:
+        p.image_url = payload.image_url
+    p.harvest_date = payload.harvest_date
+    p.freshness_badge = payload.freshness_badge
+    p.organic_badge = payload.organic_badge
+    p.government_verified = payload.government_verified
+    
+    db.commit()
+    db.refresh(p)
+    
+    item = schemas.MarketplaceProductResponse.from_orm(p)
+    item.farmer_name = current_user.name
+    item.farmer_village = farmer.village
+    item.farmer_district = farmer.district
+    return item
+
+
+@app.delete("/api/marketplace/products/{id}", response_model=dict)
+def delete_product(
+    id: int,
+    current_user: models.User = Depends(auth.require_role(["farmer"])),
+    db: Session = Depends(get_db)
+):
+    """Farmer deletes their published product."""
+    farmer = db.query(models.Farmer).filter(models.Farmer.user_id == current_user.id).first()
+    p = db.query(models.MarketplaceProduct).filter(
+        models.MarketplaceProduct.id == id,
+        models.MarketplaceProduct.farmer_id == farmer.id
+    ).first()
+    if not p:
+        raise HTTPException(status_code=404, detail="Product not found or not owned by you.")
+        
+    db.delete(p)
+    db.commit()
+    return {"success": True, "message": "Product deleted successfully."}
+
+
+# -- Cart APIs --
+
+@app.get("/api/cart", response_model=schemas.CartResponse)
+def get_cart(current_user: models.User = Depends(auth.require_role(["customer"])), db: Session = Depends(get_db)):
+    """Fetches customer's shopping cart items."""
+    cust = db.query(models.Customer).filter(models.Customer.user_id == current_user.id).first()
+    cart = db.query(models.Cart).filter(models.Cart.customer_id == cust.id).first()
+    if not cart:
+        cart = models.Cart(customer_id=cust.id)
+        db.add(cart)
+        db.commit()
+        db.refresh(cart)
+        
+    # Map products with farmer data
+    for item in cart.items:
+        p = item.product
+        p.farmer_name = p.farmer.user.name
+        p.farmer_village = p.farmer.village
+        p.farmer_district = p.farmer.district
+        
+    return cart
+
+
+@app.post("/api/cart/items", response_model=schemas.CartResponse)
+def add_to_cart(
+    payload: schemas.CartItemCreate,
+    current_user: models.User = Depends(auth.require_role(["customer"])),
+    db: Session = Depends(get_db)
+):
+    """Adds a product or updates its quantity in customer's cart."""
+    cust = db.query(models.Customer).filter(models.Customer.user_id == current_user.id).first()
+    cart = db.query(models.Cart).filter(models.Cart.customer_id == cust.id).first()
+    
+    # Check if item already in cart
+    item = db.query(models.CartItem).filter(
+        models.CartItem.cart_id == cart.id,
+        models.CartItem.product_id == payload.product_id
+    ).first()
+    
+    if item:
+        if payload.quantity <= 0:
+            db.delete(item)
+        else:
+            item.quantity = payload.quantity
+    else:
+        if payload.quantity > 0:
+            item = models.CartItem(
+                cart_id=cart.id,
+                product_id=payload.product_id,
+                quantity=payload.quantity
+            )
+            db.add(item)
+            
+    db.commit()
+    db.refresh(cart)
+    return get_cart(current_user, db)
+
+
+@app.delete("/api/cart/items/{product_id}", response_model=schemas.CartResponse)
+def remove_from_cart(
+    product_id: int,
+    current_user: models.User = Depends(auth.require_role(["customer"])),
+    db: Session = Depends(get_db)
+):
+    """Removes a product entirely from customer's cart."""
+    cust = db.query(models.Customer).filter(models.Customer.user_id == current_user.id).first()
+    cart = db.query(models.Cart).filter(models.Cart.customer_id == cust.id).first()
+    
+    item = db.query(models.CartItem).filter(
+        models.CartItem.cart_id == cart.id,
+        models.CartItem.product_id == product_id
+    ).first()
+    if item:
+        db.delete(item)
+        db.commit()
+        
+    db.refresh(cart)
+    return get_cart(current_user, db)
+
+
+@app.post("/api/cart/clear", response_model=dict)
+def clear_cart(current_user: models.User = Depends(auth.require_role(["customer"])), db: Session = Depends(get_db)):
+    """Clears customer's shopping cart."""
+    cust = db.query(models.Customer).filter(models.Customer.user_id == current_user.id).first()
+    cart = db.query(models.Cart).filter(models.Cart.customer_id == cust.id).first()
+    
+    db.query(models.CartItem).filter(models.CartItem.cart_id == cart.id).delete()
+    db.commit()
+    return {"success": True, "message": "Cart cleared successfully."}
+
+
+# -- Wishlist APIs --
+
+@app.get("/api/wishlist", response_model=List[schemas.MarketplaceProductResponse])
+def get_wishlist(current_user: models.User = Depends(auth.require_role(["customer"])), db: Session = Depends(get_db)):
+    """Fetches customer's wishlist items."""
+    cust = db.query(models.Customer).filter(models.Customer.user_id == current_user.id).first()
+    wish = db.query(models.Wishlist).filter(models.Wishlist.customer_id == cust.id).all()
+    
+    results = []
+    for w in wish:
+        p = w.product
+        item = schemas.MarketplaceProductResponse.from_orm(p)
+        item.farmer_name = p.farmer.user.name
+        item.farmer_village = p.farmer.village
+        item.farmer_district = p.farmer.district
+        results.append(item)
+    return results
+
+
+@app.post("/api/wishlist/{product_id}", response_model=dict)
+def toggle_wishlist(
+    product_id: int,
+    current_user: models.User = Depends(auth.require_role(["customer"])),
+    db: Session = Depends(get_db)
+):
+    """Toggles wishlist status of a product."""
+    cust = db.query(models.Customer).filter(models.Customer.user_id == current_user.id).first()
+    exists = db.query(models.Wishlist).filter(
+        models.Wishlist.customer_id == cust.id,
+        models.Wishlist.product_id == product_id
+    ).first()
+    
+    if exists:
+        db.delete(exists)
+        db.commit()
+        return {"success": True, "wished": False, "message": "Removed from wishlist."}
+    else:
+        w = models.Wishlist(customer_id=cust.id, product_id=product_id)
+        db.add(w)
+        db.commit()
+        return {"success": True, "wished": True, "message": "Added to wishlist."}
+
+
+# -- Coupon Validation --
+
+@app.get("/api/coupons/validate/{code}", response_model=schemas.CouponResponse)
+def validate_coupon(code: str, db: Session = Depends(get_db)):
+    """Validates coupon code."""
+    c = db.query(models.Coupon).filter(
+        models.Coupon.code == code.upper(),
+        models.Coupon.active == True
+    ).first()
+    if not c:
+        raise HTTPException(status_code=404, detail="Invalid or inactive coupon code.")
+    return c
+
+
+# -- Orders & Checkout APIs --
+
+@app.post("/api/orders/checkout", response_model=schemas.OrderResponse)
+def checkout_order(
+    payload: schemas.OrderCreate,
+    current_user: models.User = Depends(auth.require_role(["customer"])),
+    db: Session = Depends(get_db)
+):
+    """Places an order, processes payment, sets delivery timeline, and empties cart."""
+    cust = db.query(models.Customer).filter(models.Customer.user_id == current_user.id).first()
+    cart = db.query(models.Cart).filter(models.Cart.customer_id == cust.id).first()
+    if not cart or not cart.items:
+        raise HTTPException(status_code=400, detail="Shopping cart is empty.")
+        
+    # Calculate costs
+    total = 0.0
+    for item in cart.items:
+        total += item.product.price * item.quantity
+        
+    discount = 0.0
+    if payload.coupon_code:
+        coupon = db.query(models.Coupon).filter(
+            models.Coupon.code == payload.coupon_code.upper(),
+            models.Coupon.active == True
+        ).first()
+        if coupon and total >= coupon.min_purchase:
+            discount = coupon.discount_amount
+            
+    delivery_charge = 40.0 if total < 500 else 0.0
+    tax = round(total * 0.05, 2) # 5% VAT/GST
+    grand_total = round(total - discount + delivery_charge + tax, 2)
+    
+    # Create Order
+    year = datetime.datetime.utcnow().year
+    count = db.query(models.Order).count()
+    order_number = f"F2G-ORD-{year}-{10001 + count}"
+    
+    order = models.Order(
+        order_number=order_number,
+        customer_id=cust.id,
+        total_price=total,
+        delivery_charges=delivery_charge,
+        tax=tax,
+        grand_total=grand_total,
+        shipping_address=payload.shipping_address,
+        coupon_code=payload.coupon_code.upper() if payload.coupon_code else None,
+        status="Order Placed"
+    )
+    db.add(order)
+    db.commit()
+    db.refresh(order)
+    
+    # Create OrderItems and reduce stock
+    for item in cart.items:
+        # Check stock availability
+        if item.product.stock < item.quantity:
+            raise HTTPException(status_code=400, detail=f"Insufficient stock for product '{item.product.name}'. Available: {item.product.stock}")
+            
+        item.product.stock -= item.quantity
+        order_item = models.OrderItem(
+            order_id=order.id,
+            product_id=item.product.id,
+            product_name=item.product.name,
+            price=item.product.price,
+            quantity=item.quantity
+        )
+        db.add(order_item)
+        
+    # Create Payment
+    tx_ref = f"TXN-MKT-{random.randint(10000000, 99999999)}"
+    pay_status = "Pending" if payload.payment_method == "Cash on Delivery" else "Completed"
+    payment = models.MarketplacePayment(
+        order_id=order.id,
+        amount=grand_total,
+        payment_method=payload.payment_method,
+        status=pay_status,
+        transaction_reference=tx_ref
+    )
+    db.add(payment)
+    
+    # Create Delivery agent details
+    delivery = models.Delivery(
+        order_id=order.id,
+        delivery_agent="Rajesh Kumar",
+        delivery_phone="9876543210",
+        estimated_time="35 mins",
+        status="Order Placed",
+        latitude=17.9784 + (random.random() - 0.5) * 0.05,
+        longitude=79.5941 + (random.random() - 0.5) * 0.05
+    )
+    db.add(delivery)
+    
+    # Create Notifications
+    add_notification(
+        db, 
+        current_user.id, 
+        "Order Placed successfully!", 
+        f"Your order {order_number} has been created and payment processed via {payload.payment_method}.",
+        "payment"
+    )
+    
+    # Also notify farmers about new incoming orders
+    farmer_notified_ids = set()
+    for item in cart.items:
+        farmer_uid = item.product.farmer.user.id
+        if farmer_uid not in farmer_notified_ids:
+            add_notification(
+                db,
+                farmer_uid,
+                "New Marketplace Order",
+                f"You have a new customer order for '{item.product.name}'. Please accept or process it.",
+                "general"
+            )
+            farmer_notified_ids.add(farmer_uid)
+            
+    # Clear cart
+    db.query(models.CartItem).filter(models.CartItem.cart_id == cart.id).delete()
+    db.commit()
+    db.refresh(order)
+    
+    log_audit(db, current_user.id, "ORDER_CHECKOUT", f"Order {order_number} created with total {grand_total}")
+    return order
+
+
+@app.get("/api/orders/my-orders", response_model=List[schemas.OrderResponse])
+def get_my_orders(current_user: models.User = Depends(auth.require_role(["customer"])), db: Session = Depends(get_db)):
+    """Fetches list of orders placed by the current Customer."""
+    cust = db.query(models.Customer).filter(models.Customer.user_id == current_user.id).first()
+    orders = db.query(models.Order).filter(models.Order.customer_id == cust.id).order_by(models.Order.created_at.desc()).all()
+    return orders
+
+
+@app.get("/api/orders/{id}", response_model=schemas.OrderResponse)
+def get_order_detail(id: int, current_user: models.User = Depends(auth.require_role(["customer", "farmer"])), db: Session = Depends(get_db)):
+    """Fetches details of a single order."""
+    order = db.query(models.Order).filter(models.Order.id == id).first()
+    if not order:
+        raise HTTPException(status_code=404, detail="Order not found.")
+    return order
+
+
+@app.get("/api/orders/{id}/tracking", response_model=schemas.DeliveryResponse)
+def get_order_tracking(id: int, current_user: models.User = Depends(auth.require_role(["customer", "farmer"])), db: Session = Depends(get_db)):
+    """Fetches tracking details of an order delivery."""
+    delivery = db.query(models.Delivery).filter(models.Delivery.order_id == id).first()
+    if not delivery:
+        raise HTTPException(status_code=404, detail="Delivery tracking record not found.")
+    return delivery
+
+
+# -- Farmer Order Dashboard APIs --
+
+@app.get("/api/farmer/orders", response_model=List[dict])
+def get_farmer_orders(current_user: models.User = Depends(auth.require_role(["farmer"])), db: Session = Depends(get_db)):
+    """Fetches marketplace orders for products published by the current Farmer."""
+    farmer = db.query(models.Farmer).filter(models.Farmer.user_id == current_user.id).first()
+    
+    # Query order items belonging to farmer products
+    items = db.query(models.OrderItem).join(models.Order).join(models.MarketplaceProduct).filter(
+        models.MarketplaceProduct.farmer_id == farmer.id
+    ).order_by(models.Order.created_at.desc()).all()
+    
+    results = []
+    for item in items:
+        order = item.order
+        results.append({
+            "order_item_id": item.id,
+            "order_id": order.id,
+            "order_number": order.order_number,
+            "product_name": item.product_name,
+            "quantity": item.quantity,
+            "price": item.price,
+            "total": item.price * item.quantity,
+            "status": order.status,
+            "customer_name": order.customer.user.name,
+            "customer_phone": order.customer.user.phone,
+            "shipping_address": order.shipping_address,
+            "created_at": order.created_at
+        })
+    return results
+
+
+@app.post("/api/farmer/orders/{order_item_id}/accept", response_model=dict)
+def accept_order_item(
+    order_item_id: int,
+    current_user: models.User = Depends(auth.require_role(["farmer"])),
+    db: Session = Depends(get_db)
+):
+    """Farmer accepts the order."""
+    farmer = db.query(models.Farmer).filter(models.Farmer.user_id == current_user.id).first()
+    item = db.query(models.OrderItem).filter(models.OrderItem.id == order_item_id).first()
+    if not item or item.product.farmer_id != farmer.id:
+        raise HTTPException(status_code=404, detail="Order item not found or not owned by you.")
+        
+    order = item.order
+    order.status = "Confirmed"
+    
+    # Update delivery tracking details
+    delivery = db.query(models.Delivery).filter(models.Delivery.order_id == order.id).first()
+    if delivery:
+        delivery.status = "Confirmed"
+        
+    db.commit()
+    
+    # Notify customer
+    add_notification(
+        db,
+        order.customer.user_id,
+        "Order Confirmed",
+        f"Your order {order.order_number} has been confirmed by the farmer.",
+        "general"
+    )
+    return {"success": True, "message": "Order accepted successfully."}
+
+
+@app.post("/api/farmer/orders/{order_item_id}/reject", response_model=dict)
+def reject_order_item(
+    order_item_id: int,
+    current_user: models.User = Depends(auth.require_role(["farmer"])),
+    db: Session = Depends(get_db)
+):
+    """Farmer rejects the order."""
+    farmer = db.query(models.Farmer).filter(models.Farmer.user_id == current_user.id).first()
+    item = db.query(models.OrderItem).filter(models.OrderItem.id == order_item_id).first()
+    if not item or item.product.farmer_id != farmer.id:
+        raise HTTPException(status_code=404, detail="Order item not found or not owned by you.")
+        
+    order = item.order
+    order.status = "Rejected"
+    
+    # Return stock
+    if item.product:
+        item.product.stock += item.quantity
+        
+    # Update delivery tracking details
+    delivery = db.query(models.Delivery).filter(models.Delivery.order_id == order.id).first()
+    if delivery:
+        delivery.status = "Rejected"
+        
+    db.commit()
+    
+    # Notify customer
+    add_notification(
+        db,
+        order.customer.user_id,
+        "Order Rejected",
+        f"Your order {order.order_number} was rejected by the farmer. A refund has been initiated.",
+        "general"
+    )
+    return {"success": True, "message": "Order rejected successfully."}
+
+
+@app.post("/api/farmer/orders/{order_item_id}/status", response_model=dict)
+def update_delivery_status(
+    order_item_id: int,
+    status: str = Form(...), # "Packed", "Picked Up", "Out For Delivery", "Delivered"
+    current_user: models.User = Depends(auth.require_role(["farmer"])),
+    db: Session = Depends(get_db)
+):
+    """Farmer updates delivery status of an order."""
+    farmer = db.query(models.Farmer).filter(models.Farmer.user_id == current_user.id).first()
+    item = db.query(models.OrderItem).filter(models.OrderItem.id == order_item_id).first()
+    if not item or item.product.farmer_id != farmer.id:
+        raise HTTPException(status_code=404, detail="Order item not found.")
+        
+    order = item.order
+    order.status = status
+    
+    # Update delivery tracking details
+    delivery = db.query(models.Delivery).filter(models.Delivery.order_id == order.id).first()
+    if delivery:
+        delivery.status = status
+        if status == "Out For Delivery":
+            delivery.latitude = 17.9784 + (random.random() - 0.5) * 0.02
+            delivery.longitude = 79.5941 + (random.random() - 0.5) * 0.02
+            delivery.estimated_time = "12 mins"
+        elif status == "Delivered":
+            delivery.estimated_time = "Delivered"
+            # Update payment status for Cash on Delivery
+            if order.payment and order.payment.payment_method == "Cash on Delivery":
+                order.payment.status = "Completed"
+                
+    db.commit()
+    
+    # Notify customer
+    add_notification(
+        db,
+        order.customer.user_id,
+        f"Order Status Update: {status}",
+        f"Your order {order.order_number} status has been updated to '{status}'.",
+        "general"
+    )
+    return {"success": True, "message": f"Status updated to {status}."}
+
+
+@app.get("/api/farmer/analytics", response_model=dict)
+def get_farmer_analytics(current_user: models.User = Depends(auth.require_role(["farmer"])), db: Session = Depends(get_db)):
+    """Computes marketplace earnings analytics for the Farmer dashboard."""
+    farmer = db.query(models.Farmer).filter(models.Farmer.user_id == current_user.id).first()
+    
+    # Total published products
+    prod_count = db.query(models.MarketplaceProduct).filter(models.MarketplaceProduct.farmer_id == farmer.id).count()
+    
+    # Query order items
+    items = db.query(models.OrderItem).join(models.Order).join(models.MarketplaceProduct).filter(
+        models.MarketplaceProduct.farmer_id == farmer.id
+    ).all()
+    
+    total_sales = 0.0
+    completed_orders = 0
+    pending_orders = 0
+    total_items_sold = 0
+    
+    for item in items:
+        total_items_sold += item.quantity
+        if item.order.status == "Delivered":
+            total_sales += item.price * item.quantity
+            completed_orders += 1
+        elif item.order.status in ["Order Placed", "Confirmed", "Packed", "Picked Up", "Out For Delivery"]:
+            pending_orders += 1
+            
+    # Compute average rating
+    avg_rating_row = db.query(func.avg(models.MarketplaceProduct.rating)).filter(
+        models.MarketplaceProduct.farmer_id == farmer.id
+    ).first()
+    avg_rating = round(avg_rating_row[0], 1) if avg_rating_row and avg_rating_row[0] is not None else 5.0
+    
+    # Recent Sales trend data (Grouped by date)
+    sales_data = []
+    # Mocking sales charts trend logic for a beautiful dashboard
+    today = datetime.datetime.utcnow().date()
+    for d in range(6, -1, -1):
+        day_date = today - datetime.timedelta(days=d)
+        date_str = day_date.strftime("%b %d")
+        
+        # Calculate earnings for this day
+        day_earnings = 0.0
+        for item in items:
+            if item.order.created_at.date() == day_date and item.order.status == "Delivered":
+                day_earnings += item.price * item.quantity
+                
+        sales_data.append({"date": date_str, "earnings": day_earnings})
+        
+    return {
+        "products_count": prod_count,
+        "total_earnings": round(total_sales, 2),
+        "items_sold": total_items_sold,
+        "completed_orders": completed_orders,
+        "pending_orders": pending_orders,
+        "average_rating": avg_rating,
+        "sales_trend": sales_data
+    }
+
+
+# -- Product Reviews APIs --
+
+@app.post("/api/marketplace/products/{id}/reviews", response_model=schemas.ProductReviewResponse)
+def add_product_review(
+    id: int,
+    payload: schemas.ProductReviewCreate,
+    current_user: models.User = Depends(auth.require_role(["customer"])),
+    db: Session = Depends(get_db)
+):
+    """Customer submits a review and rating for a marketplace product."""
+    cust = db.query(models.Customer).filter(models.Customer.user_id == current_user.id).first()
+    p = db.query(models.MarketplaceProduct).filter(models.MarketplaceProduct.id == id).first()
+    if not p:
+        raise HTTPException(status_code=404, detail="Product not found.")
+        
+    # Check if already reviewed
+    exists = db.query(models.ProductReview).filter(
+        models.ProductReview.product_id == id,
+        models.ProductReview.customer_id == cust.id
+    ).first()
+    if exists:
+        raise HTTPException(status_code=400, detail="You have already reviewed this product.")
+        
+    review = models.ProductReview(
+        product_id=id,
+        customer_id=cust.id,
+        rating=payload.rating,
+        comment=payload.comment
+    )
+    db.add(review)
+    db.commit()
+    db.refresh(review)
+    
+    # Recalculate average rating of product
+    avg_rating = db.query(func.avg(models.ProductReview.rating)).filter(
+        models.ProductReview.product_id == id
+    ).first()
+    if avg_rating and avg_rating[0]:
+        p.rating = round(avg_rating[0], 1)
+        db.commit()
+        
+    res = schemas.ProductReviewResponse.from_orm(review)
+    res.customer_name = current_user.name
+    return res
+
+
+@app.get("/api/marketplace/products/{id}/reviews", response_model=List[schemas.ProductReviewResponse])
+def get_product_reviews(id: int, db: Session = Depends(get_db)):
+    """Fetches all customer reviews of a product."""
+    reviews = db.query(models.ProductReview).filter(models.ProductReview.product_id == id).order_by(models.ProductReview.created_at.desc()).all()
+    
+    results = []
+    for r in reviews:
+        item = schemas.ProductReviewResponse.from_orm(r)
+        item.customer_name = r.customer.user.name
+        results.append(item)
+    return results

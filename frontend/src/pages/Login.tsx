@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { motion } from 'framer-motion';
-import { Sprout, Lock, KeyRound, User, Users, ShieldAlert, ArrowLeft, CheckCircle } from 'lucide-react';
+import { Sprout, Lock, KeyRound, User, Users, ShieldAlert, ArrowLeft, CheckCircle, ShoppingBag } from 'lucide-react';
 
 const Login: React.FC = () => {
   const { login } = useAuth();
@@ -15,15 +15,16 @@ const Login: React.FC = () => {
   const successMessage = location.state?.message || '';
 
   // State controls
-  const [role, setRole] = useState<'farmer' | 'officer' | 'admin'>('farmer');
+  const [role, setRole] = useState<'farmer' | 'officer' | 'admin' | 'customer'>('farmer');
+  const [customerLoginMode, setCustomerLoginMode] = useState<'password' | 'otp'>('password');
   
-  // Farmer OTP states
+  // OTP states
   const [phone, setPhone] = useState('');
   const [otp, setOtp] = useState('');
   const [otpSent, setOtpSent] = useState(false);
   const [simulatedOtp, setSimulatedOtp] = useState('');
   
-  // Officer/Admin Password states
+  // Password states
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
@@ -82,6 +83,7 @@ const Login: React.FC = () => {
       
       // Navigate to respective dashboard
       if (data.role === 'farmer') navigate('/farmer-dashboard');
+      else if (data.role === 'customer') navigate('/customer-dashboard');
       else if (data.role === 'officer') navigate('/officer-dashboard');
       else navigate('/admin-dashboard');
     } catch (err: any) {
@@ -111,7 +113,8 @@ const Login: React.FC = () => {
 
       login(data.access_token, data.role, data.user_id, data.name);
       
-      if (data.role === 'officer') navigate('/officer-dashboard');
+      if (data.role === 'customer') navigate('/customer-dashboard');
+      else if (data.role === 'officer') navigate('/officer-dashboard');
       else navigate('/admin-dashboard');
     } catch (err: any) {
       setError(err.message || 'Password authentication failed.');
@@ -150,8 +153,8 @@ const Login: React.FC = () => {
           className="rounded-3xl border border-slate-200 bg-white p-8 shadow-xl"
         >
           {/* Role selector buttons */}
-          <div className="grid grid-cols-3 gap-2 p-1 bg-slate-100 rounded-xl mb-6">
-            {(['farmer', 'officer', 'admin'] as const).map((r) => (
+          <div className="grid grid-cols-4 gap-1.5 p-1 bg-slate-100 rounded-xl mb-6">
+            {(['farmer', 'customer', 'officer', 'admin'] as const).map((r) => (
               <button
                 key={r}
                 type="button"
@@ -160,12 +163,13 @@ const Login: React.FC = () => {
                   setError('');
                   setOtpSent(false);
                 }}
-                className={`flex flex-col items-center justify-center py-2.5 rounded-lg text-[10px] font-bold uppercase transition-all cursor-pointer ${role === r ? 'bg-emerald-600 text-white shadow' : 'text-slate-500 hover:text-slate-900'}`}
+                className={`flex flex-col items-center justify-center py-2.5 rounded-lg text-[9px] font-bold uppercase transition-all cursor-pointer ${role === r ? 'bg-emerald-600 text-white shadow' : 'text-slate-500 hover:text-slate-900'}`}
               >
                 {r === 'farmer' && <Users className="h-4 w-4 mb-1" />}
+                {r === 'customer' && <ShoppingBag className="h-4 w-4 mb-1" />}
                 {r === 'officer' && <User className="h-4 w-4 mb-1" />}
                 {r === 'admin' && <KeyRound className="h-4 w-4 mb-1" />}
-                {t(r)}
+                {r === 'customer' ? 'Customer' : t(r)}
               </button>
             ))}
           </div>
@@ -184,22 +188,58 @@ const Login: React.FC = () => {
             </div>
           )}
 
-          {/* SIMULATED SMS TOAST BOX FOR FARMER OTP */}
-          {role === 'farmer' && otpSent && simulatedOtp && (
+          {/* SIMULATED SMS TOAST BOX FOR OTP */}
+          {(role === 'farmer' || (role === 'customer' && customerLoginMode === 'otp')) && otpSent && simulatedOtp && (
             <motion.div
               initial={{ opacity: 0, scale: 0.98 }}
               animate={{ opacity: 1, scale: 1 }}
               className="mb-6 rounded-xl bg-emerald-50 border border-emerald-100 p-3.5 text-xs text-emerald-750 font-mono text-center flex flex-col items-center"
             >
               <p className="font-sans uppercase text-[10px] tracking-wider text-emerald-600 font-bold mb-1">Simulated SMS Delivery</p>
-              <p>Your Farmer2Gov verification code is: <span className="font-extrabold text-base tracking-wider text-slate-900 bg-white px-2 py-0.5 rounded border border-emerald-200 ml-1">{simulatedOtp}</span></p>
-              <p className="text-[10px] text-slate-400 mt-2 font-sans">For test convenience, typing 123456 will also authenticate successfully.</p>
+              <p>Your verification code is: <span className="font-extrabold text-base tracking-wider text-slate-900 bg-white px-2 py-0.5 rounded border border-emerald-200 ml-1">{simulatedOtp}</span></p>
+              <p className="text-[10px] text-slate-450 mt-2 font-sans">For test convenience, typing 123456 will also authenticate successfully.</p>
             </motion.div>
           )}
 
+          {/* Customer Login Mode Selector */}
+          {role === 'customer' && (
+            <div className="flex gap-2 mb-4 p-1 bg-slate-50 border rounded-xl">
+              <button
+                type="button"
+                onClick={() => {
+                  setCustomerLoginMode('password');
+                  setError('');
+                  setOtpSent(false);
+                }}
+                className={`flex-1 py-1.5 rounded-lg text-[10px] font-bold transition-all cursor-pointer ${
+                  customerLoginMode === 'password'
+                    ? 'bg-orange-600 text-white shadow'
+                    : 'text-slate-500 hover:text-slate-900'
+                }`}
+              >
+                Password Login
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setCustomerLoginMode('otp');
+                  setError('');
+                  setOtpSent(false);
+                }}
+                className={`flex-1 py-1.5 rounded-lg text-[10px] font-bold transition-all cursor-pointer ${
+                  customerLoginMode === 'otp'
+                    ? 'bg-orange-600 text-white shadow'
+                    : 'text-slate-500 hover:text-slate-900'
+                }`}
+              >
+                OTP Login
+              </button>
+            </div>
+          )}
+
           {/* Form conditional render */}
-          {role === 'farmer' ? (
-            /* FARMER LOGS IN WITH OTP */
+          {(role === 'farmer' || (role === 'customer' && customerLoginMode === 'otp')) ? (
+            /* OTP LOGIN FLOW */
             !otpSent ? (
               <form onSubmit={handleRequestOtp} className="space-y-5">
                 <div>
@@ -276,18 +316,18 @@ const Login: React.FC = () => {
               </form>
             )
           ) : (
-            /* OFFICERS / ADMINS LOG IN WITH EMAIL / PASSWORD */
+            /* PASSWORD LOGIN FLOW */
             <form onSubmit={handlePasswordLogin} className="space-y-5">
               <div>
                 <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
-                  Official Email ID
+                  {role === 'customer' ? 'Customer Email ID' : 'Official Email ID'}
                 </label>
                 <div className="relative">
                   <span className="absolute left-3.5 top-3.5 text-slate-400 text-xs font-bold">@</span>
                   <input
                     type="email"
                     required
-                    placeholder="officer_1@farmer2gov.gov.in"
+                    placeholder={role === 'customer' ? 'customer@farmer2gov.gov.in' : 'officer_1@farmer2gov.gov.in'}
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     className="w-full rounded-xl border border-slate-200 bg-slate-50 py-3 pl-11 pr-4 text-sm font-semibold text-slate-900 focus:border-emerald-500 focus:outline-none placeholder:text-slate-400"
@@ -316,7 +356,9 @@ const Login: React.FC = () => {
 
               <div className="bg-slate-50 p-3 rounded-lg border border-slate-200 flex flex-col gap-1 text-[10px] text-slate-550 leading-normal">
                 <p className="font-bold text-slate-700">Default Demo Credentials:</p>
-                {role === 'officer' ? (
+                {role === 'customer' ? (
+                  <p>Email: <span className="text-slate-900 font-mono font-bold">customer@farmer2gov.gov.in</span><br/>Password: <span className="text-slate-900 font-mono font-bold">customer123</span></p>
+                ) : role === 'officer' ? (
                   <p>Email: <span className="text-slate-900 font-mono font-bold">officer_1@farmer2gov.gov.in</span><br/>Password: <span className="text-slate-900 font-mono font-bold">officer123</span></p>
                 ) : (
                   <p>Email: <span className="text-slate-900 font-mono font-bold">admin@farmer2gov.gov.in</span><br/>Password: <span className="text-slate-900 font-mono font-bold">admin123</span></p>
@@ -342,6 +384,19 @@ const Login: React.FC = () => {
                 className="w-full rounded-xl border border-emerald-650/30 hover:border-emerald-600 bg-white hover:bg-emerald-50/30 py-2.5 text-xs font-bold text-emerald-650 transition-all cursor-pointer"
               >
                 Register
+              </button>
+            </div>
+          )}
+
+          {role === 'customer' && (
+            <div className="mt-6 pt-6 border-t border-slate-100 text-center">
+              <p className="text-xs text-slate-500 font-semibold mb-2">New Customer?</p>
+              <button
+                type="button"
+                onClick={() => navigate('/RegisterCustomer')}
+                className="w-full rounded-xl border border-emerald-650/30 hover:border-emerald-600 bg-white hover:bg-emerald-50/30 py-2.5 text-xs font-bold text-emerald-650 transition-all cursor-pointer"
+              >
+                Register as Customer
               </button>
             </div>
           )}

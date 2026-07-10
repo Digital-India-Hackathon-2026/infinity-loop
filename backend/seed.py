@@ -390,7 +390,173 @@ def seed_data():
                     "payment"
                 )
 
-        print("[OK] Seeded 50 registrations, AI profiles, slot entries, weigh-ins, and payments.")
+        # Seed Coupons
+        print("Seeding Coupons...")
+        coupons = [
+            {"code": "F2G50", "discount_amount": 50.0, "min_purchase": 200.0},
+            {"code": "DIWALI100", "discount_amount": 100.0, "min_purchase": 500.0},
+            {"code": "FRESH30", "discount_amount": 30.0, "min_purchase": 150.0}
+        ]
+        for c in coupons:
+            db_coupon = models.Coupon(
+                code=c["code"],
+                discount_amount=c["discount_amount"],
+                min_purchase=c["min_purchase"],
+                active=True
+            )
+            db.add(db_coupon)
+        db.commit()
+        print("[OK] Seeded coupons.")
+
+        # Seed Customers
+        print("Seeding Customers...")
+        cust_user = models.User(
+            name="Ramesh Customer",
+            email="customer@farmer2gov.gov.in",
+            phone="9876543211",
+            hashed_password=auth.get_password_hash("customer123"),
+            role="customer"
+        )
+        db.add(cust_user)
+        db.commit()
+        db.refresh(cust_user)
+
+        customer = models.Customer(
+            user_id=cust_user.id,
+            customer_id="F2G-CUST-2026-1001",
+            address="12-34 Rythu Bazar Lane, Madikonda",
+            state="Telangana",
+            district="Warangal",
+            pincode="506003",
+            profile_photo="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200"
+        )
+        db.add(customer)
+        db.commit()
+        db.refresh(customer)
+
+        cart = models.Cart(customer_id=customer.id)
+        db.add(cart)
+        db.commit()
+        print("[OK] Seeded customer profile and cart.")
+
+        # Seed Marketplace Products for the first few farmers
+        print("Seeding Marketplace Products...")
+        farmers = db.query(models.Farmer).limit(5).all()
+        products = [
+            {
+                "name": "Organic Basmati Rice",
+                "description": "Premium aged organic Basmati rice direct from the farms of Warangal. High nutritional value and long grains.",
+                "category": "Grains",
+                "price": 85.0,
+                "original_price": 110.0,
+                "discount": 22.0,
+                "stock": 500.0,
+                "unit": "kg",
+                "image_url": "https://images.unsplash.com/photo-1586201375761-83865001e31c?auto=format&fit=crop&q=80&w=400",
+                "harvest_date": "2026-05-15",
+                "freshness_badge": "Aged 1 Year",
+                "organic_badge": True,
+                "government_verified": True
+            },
+            {
+                "name": "Fresh Sharbati Wheat",
+                "description": "Rich golden grains of premium wheat from Guntur. Perfect for making soft rotis.",
+                "category": "Grains",
+                "price": 45.0,
+                "original_price": 55.0,
+                "discount": 18.0,
+                "stock": 1000.0,
+                "unit": "kg",
+                "image_url": "https://images.unsplash.com/photo-1574323347407-f5e1ad6d020b?auto=format&fit=crop&q=80&w=400",
+                "harvest_date": "2026-06-10",
+                "freshness_badge": "Newly Harvested",
+                "organic_badge": False,
+                "government_verified": True
+            },
+            {
+                "name": "Organic Red Tomatoes",
+                "description": "Juicy and vine-ripened organic red tomatoes. Freshly plucked and rich in Lycopene.",
+                "category": "Vegetables",
+                "price": 30.0,
+                "original_price": 40.0,
+                "discount": 25.0,
+                "stock": 150.0,
+                "unit": "kg",
+                "image_url": "https://images.unsplash.com/photo-1595855759920-86582396756a?auto=format&fit=crop&q=80&w=400",
+                "harvest_date": "2026-07-09",
+                "freshness_badge": "Plucked Today",
+                "organic_badge": True,
+                "government_verified": False
+            },
+            {
+                "name": "Premium Red Onions",
+                "description": "Crisp and farm-fresh red onions. High pungency, excellent shelf-life.",
+                "category": "Vegetables",
+                "price": 25.0,
+                "original_price": 30.0,
+                "discount": 16.0,
+                "stock": 300.0,
+                "unit": "kg",
+                "image_url": "https://images.unsplash.com/photo-1508747703725-719ae2cf29d4?auto=format&fit=crop&q=80&w=400",
+                "harvest_date": "2026-07-05",
+                "freshness_badge": "95% Freshness",
+                "organic_badge": False,
+                "government_verified": True
+            },
+            {
+                "name": "Organic Moong Dal",
+                "description": "High protein split yellow moong beans. Chemical-free farming and unpolished grains.",
+                "category": "Pulses",
+                "price": 120.0,
+                "original_price": 140.0,
+                "discount": 14.0,
+                "stock": 250.0,
+                "unit": "kg",
+                "image_url": "https://upload.wikimedia.org/wikipedia/commons/f/f2/Sa_green_gram.jpg",
+                "harvest_date": "2026-06-25",
+                "freshness_badge": "100% Organic",
+                "organic_badge": True,
+                "government_verified": True
+            },
+            {
+                "name": "Dry Red Chillies",
+                "description": "Hot and spicy dried red Guntur chillies. Excellent red colour and high pungency factor.",
+                "category": "Vegetables",
+                "price": 180.0,
+                "original_price": 220.0,
+                "discount": 18.0,
+                "stock": 200.0,
+                "unit": "kg",
+                "image_url": "https://images.unsplash.com/photo-1588166524941-3bf61a9c41db?auto=format&fit=crop&q=80&w=400",
+                "harvest_date": "2026-06-30",
+                "freshness_badge": "Sun-Dried",
+                "organic_badge": True,
+                "government_verified": True
+            }
+        ]
+
+        for i, prod in enumerate(products):
+            farmer = farmers[i % len(farmers)]
+            db_p = models.MarketplaceProduct(
+                farmer_id=farmer.id,
+                name=prod["name"],
+                description=prod["description"],
+                category=prod["category"],
+                price=prod["price"],
+                original_price=prod["original_price"],
+                discount=prod["discount"],
+                stock=prod["stock"],
+                unit=prod["unit"],
+                image_url=prod["image_url"],
+                harvest_date=prod["harvest_date"],
+                freshness_badge=prod["freshness_badge"],
+                organic_badge=prod["organic_badge"],
+                government_verified=prod["government_verified"]
+            )
+            db.add(db_p)
+        db.commit()
+        print("[OK] Seeded 6 marketplace products.")
+
         print("Database Seed completed successfully! All records verified.")
 
     except Exception as e:

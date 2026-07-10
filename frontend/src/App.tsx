@@ -8,6 +8,15 @@ import Register from './pages/Register';
 import FarmerDashboard from './pages/FarmerDashboard';
 import OfficerDashboard from './pages/OfficerDashboard';
 import AdminDashboard from './pages/AdminDashboard';
+import RegisterCustomer from './pages/RegisterCustomer';
+import CustomerDashboard from './pages/CustomerDashboard';
+import ProductDetails from './pages/ProductDetails';
+import Cart from './pages/Cart';
+import Checkout from './pages/Checkout';
+import Payment from './pages/Payment';
+import DeliveryTracking from './pages/DeliveryTracking';
+import Wishlist from './pages/Wishlist';
+import CustomerProfile from './pages/CustomerProfile';
 import ProtectedRoute from './components/ProtectedRoute';
 
 function App() {
@@ -27,6 +36,9 @@ function App() {
 
             {/* Auth Register Screen */}
             <Route path="/register" element={<Register />} />
+            
+            {/* Customer Register Screen */}
+            <Route path="/RegisterCustomer" element={<RegisterCustomer />} />
 
             {/* Farmer Dashboard Protected Route */}
             <Route element={<ProtectedRoute allowedRoles={['farmer']} />}>
@@ -41,6 +53,19 @@ function App() {
             {/* Administrator Protected Route */}
             <Route element={<ProtectedRoute allowedRoles={['admin']} />}>
               <Route path="/admin-dashboard" element={<AdminDashboard />} />
+            </Route>
+
+            {/* Customer Protected Routes */}
+            <Route element={<ProtectedRoute allowedRoles={['customer']} />}>
+              <Route path="/customer-dashboard" element={<CustomerDashboard />} />
+              <Route path="/marketplace" element={<CustomerDashboard />} />
+              <Route path="/product/:id" element={<ProductDetails />} />
+              <Route path="/cart" element={<Cart />} />
+              <Route path="/checkout" element={<Checkout />} />
+              <Route path="/payment" element={<Payment />} />
+              <Route path="/delivery-tracking/:orderId" element={<DeliveryTracking />} />
+              <Route path="/wishlist" element={<Wishlist />} />
+              <Route path="/customer-profile" element={<CustomerProfile />} />
             </Route>
 
             {/* Fallback Catch-All */}
