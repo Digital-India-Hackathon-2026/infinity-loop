@@ -2,9 +2,9 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  Sprout, FileText, TrendingUp, Landmark, ChevronRight, Bell, Languages, 
-  LogOut, Search, Camera, Calendar, Clock, AlertTriangle, 
+import {
+  Sprout, FileText, TrendingUp, Landmark, ChevronRight, Bell, Languages,
+  LogOut, Search, Camera, Calendar, Clock, AlertTriangle,
   CheckCircle, ArrowLeft, RefreshCw, X, Mic, AlertCircle, ShoppingBag, MapPin, Upload
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
@@ -64,24 +64,24 @@ interface ProcurementDetail {
 const mspProduceItems = [
   { name: 'Paddy', nameKey: 'crop_paddy', categoryKey: 'cat_grains', price: '₹2,183', unitKey: 'unit_qtl', type: 'msp', infoKey: 'crop_paddy_info', imageUrl: 'https://images.unsplash.com/photo-1586201375761-83865001e31c?auto=format&fit=crop&q=80&w=400' },
   { name: 'Wheat', nameKey: 'crop_wheat', categoryKey: 'cat_grains', price: '₹2,275', unitKey: 'unit_qtl', type: 'msp', infoKey: 'crop_wheat_info', imageUrl: 'https://images.unsplash.com/photo-1574323347407-f5e1ad6d020b?auto=format&fit=crop&q=80&w=400' },
-  { name: 'Maize', nameKey: 'crop_maize', categoryKey: 'cat_grains', price: '₹2,090', unitKey: 'unit_qtl', type: 'msp', infoKey: 'crop_maize_info', imageUrl: 'https://images.unsplash.com/photo-1551754625-70c9003507d5?auto=format&fit=crop&q=80&w=400' },
-  { name: 'Jowar', nameKey: 'crop_jowar', categoryKey: 'cat_grains', price: '₹3,180', unitKey: 'unit_qtl', type: 'msp', infoKey: 'crop_jowar_info', imageUrl: 'https://images.unsplash.com/photo-1599599810769-bcde5a160d32?auto=format&fit=crop&q=80&w=400' },
-  { name: 'Bajra', nameKey: 'crop_bajra', categoryKey: 'cat_grains', price: '₹2,500', unitKey: 'unit_qtl', type: 'msp', infoKey: 'crop_bajra_info', imageUrl: 'https://images.unsplash.com/photo-1628155930542-3c7a64e2c833?auto=format&fit=crop&q=80&w=400' },
-  { name: 'Ragi', nameKey: 'crop_ragi', categoryKey: 'cat_grains', price: '₹3,846', unitKey: 'unit_qtl', type: 'msp', infoKey: 'crop_ragi_info', imageUrl: 'https://images.unsplash.com/photo-1509440159596-0249088772ff?auto=format&fit=crop&q=80&w=400' },
-  { name: 'Gram', nameKey: 'crop_gram', categoryKey: 'cat_pulses', price: '₹5,440', unitKey: 'unit_qtl', type: 'msp', infoKey: 'crop_gram_info', imageUrl: 'https://images.unsplash.com/photo-1547058881-aa0edd92aab3?auto=format&fit=crop&q=80&w=400' },
-  { name: 'Tur', nameKey: 'crop_tur', categoryKey: 'cat_pulses', price: '₹7,000', unitKey: 'unit_qtl', type: 'msp', infoKey: 'crop_tur_info', imageUrl: 'https://images.unsplash.com/photo-1608686207856-001b95cf60ca?auto=format&fit=crop&q=80&w=400' },
-  { name: 'Moong', nameKey: 'crop_moong', categoryKey: 'cat_pulses', price: '₹8,558', unitKey: 'unit_qtl', type: 'msp', infoKey: 'crop_moong_info', imageUrl: 'https://images.unsplash.com/photo-1586201375761-83865001e31c?auto=format&fit=crop&q=80&w=400' },
-  { name: 'Urad', nameKey: 'crop_urad', categoryKey: 'cat_pulses', price: '₹6,950', unitKey: 'unit_qtl', type: 'msp', infoKey: 'crop_urad_info', imageUrl: 'https://images.unsplash.com/photo-1608686207856-001b95cf60ca?auto=format&fit=crop&q=80&w=400' },
-  { name: 'Groundnut', nameKey: 'crop_groundnut', categoryKey: 'cat_oilseeds', price: '₹6,377', unitKey: 'unit_qtl', type: 'msp', infoKey: 'crop_groundnut_info', imageUrl: 'https://images.unsplash.com/photo-1568254183919-78a4f43a2877?auto=format&fit=crop&q=80&w=400' },
-  { name: 'Sunflower Seed', nameKey: 'crop_sunflower_seed', categoryKey: 'cat_oilseeds', price: '₹6,760', unitKey: 'unit_qtl', type: 'msp', infoKey: 'crop_sunflower_seed_info', imageUrl: 'https://images.unsplash.com/photo-1597848212624-a19eb35e2651?auto=format&fit=crop&q=80&w=400' },
-  { name: 'Soybean', nameKey: 'crop_soybean', categoryKey: 'cat_oilseeds', price: '₹4,600', unitKey: 'unit_qtl', type: 'msp', infoKey: 'crop_soybean_info', imageUrl: 'https://images.unsplash.com/photo-1589927986089-35812388d1f4?auto=format&fit=crop&q=80&w=400' },
-  { name: 'Sesamum', nameKey: 'crop_sesamum', categoryKey: 'cat_oilseeds', price: '₹8,635', unitKey: 'unit_qtl', type: 'msp', infoKey: 'crop_sesamum_info', imageUrl: 'https://images.unsplash.com/photo-1586201375761-83865001e31c?auto=format&fit=crop&q=80&w=400' },
-  { name: 'Cotton', nameKey: 'crop_cotton', categoryKey: 'cat_commercial', price: '₹6,620', unitKey: 'unit_qtl', type: 'msp', infoKey: 'crop_cotton_info', imageUrl: 'https://images.unsplash.com/photo-1594900010620-330cc7c50a0f?auto=format&fit=crop&q=80&w=400' },
-  { name: 'Tomato', nameKey: 'crop_tomato', categoryKey: 'cat_vegetables', price: '₹1,800', unitKey: 'unit_qtl', type: 'market', infoKey: 'crop_tomato_info', imageUrl: 'https://images.unsplash.com/photo-1595855759920-86582396756a?auto=format&fit=crop&q=80&w=400' },
-  { name: 'Onion', nameKey: 'crop_onion', categoryKey: 'cat_vegetables', price: '₹2,200', unitKey: 'unit_qtl', type: 'market', infoKey: 'crop_onion_info', imageUrl: 'https://images.unsplash.com/photo-1508747703725-719ae2cf29d4?auto=format&fit=crop&q=80&w=400' },
+  { name: 'Maize', nameKey: 'crop_maize', categoryKey: 'cat_grains', price: '₹2,090', unitKey: 'unit_qtl', type: 'msp', infoKey: 'crop_maize_info', imageUrl: 'https://images.unsplash.com/photo-1623066798929-946425dbe1b0?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8M3x8bWFpemV8ZW58MHx8MHx8fDA%3D' },
+  { name: 'Jowar', nameKey: 'crop_jowar', categoryKey: 'cat_grains', price: '₹3,180', unitKey: 'unit_qtl', type: 'msp', infoKey: 'crop_jowar_info', imageUrl: 'https://media.istockphoto.com/id/1262684430/photo/closeup-view-of-a-white-millet-jowar.webp?a=1&b=1&s=612x612&w=0&k=20&c=T8p-XIZUQaEOU9nwvwm8MCWTTiKrtWpB0gY-qk4A3HY=' },
+  { name: 'Bajra', nameKey: 'crop_bajra', categoryKey: 'cat_grains', price: '₹2,500', unitKey: 'unit_qtl', type: 'msp', infoKey: 'crop_bajra_info', imageUrl: 'https://www.oraplanet.com/cdn/shop/products/Bajra-whole_300x300.jpg?v=1597410743' },
+  { name: 'Ragi', nameKey: 'crop_ragi', categoryKey: 'cat_grains', price: '₹3,846', unitKey: 'unit_qtl', type: 'msp', infoKey: 'crop_ragi_info', imageUrl: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcThc4dnM_zQ2ohtlUMPfRqZPePtxgz-oCvmvVsE2629uA&s=10' },
+  { name: 'Gram', nameKey: 'crop_gram', categoryKey: 'cat_pulses', price: '₹5,440', unitKey: 'unit_qtl', type: 'msp', infoKey: 'crop_gram_info', imageUrl: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSMHOJM2EuKcc1py7QZqT9Rs1wh_hnCB3G2U9oc7FsZD_u5DIOR14pMjo0&s=10' },
+  { name: 'Tur', nameKey: 'crop_tur', categoryKey: 'cat_pulses', price: '₹7,000', unitKey: 'unit_qtl', type: 'msp', infoKey: 'crop_tur_info', imageUrl: 'https://m.media-amazon.com/images/I/51Ve5FD3+lS._AC_UF894,1000_QL80_.jpg' },
+  { name: 'Moong', nameKey: 'crop_moong', categoryKey: 'cat_pulses', price: '₹8,558', unitKey: 'unit_qtl', type: 'msp', infoKey: 'crop_moong_info', imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/f/f2/Sa_green_gram.jpg' },
+  { name: 'Urad', nameKey: 'crop_urad', categoryKey: 'cat_pulses', price: '₹6,950', unitKey: 'unit_qtl', type: 'msp', infoKey: 'crop_urad_info', imageUrl: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcT5EFj1le4T6RSWHrJVCrQaTxngfqTncyNuXrMlNsHE_A&s=10' },
+  { name: 'Groundnut', nameKey: 'crop_groundnut', categoryKey: 'cat_oilseeds', price: '₹6,377', unitKey: 'unit_qtl', type: 'msp', infoKey: 'crop_groundnut_info', imageUrl: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRXHv4EdGnOAAg7i2Ro25yVh9v4z9Ja4Q9w8KR38V1Z1A&s=10' },
+  { name: 'Sunflower Seed', nameKey: 'crop_sunflower_seed', categoryKey: 'cat_oilseeds', price: '₹6,760', unitKey: 'unit_qtl', type: 'msp', infoKey: 'crop_sunflower_seed_info', imageUrl: 'https://www.eatingwell.com/thmb/q5Ej3AulH6iP3wDG60BOJ8Xanhg=/1500x0/filters:no_upscale():max_bytes(150000):strip_icc()/sunflower-seeds-square-a86a13fc532d4947a9ee580a97c77285.jpg' },
+  { name: 'Soybean', nameKey: 'crop_soybean', categoryKey: 'cat_oilseeds', price: '₹4,600', unitKey: 'unit_qtl', type: 'msp', infoKey: 'crop_soybean_info', imageUrl: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQkc_ouSA7mMF3XNfUaq8ZRAapCmwq4K1DtL5SlUp-cIw&s=10' },
+  { name: 'Sesamum', nameKey: 'crop_sesamum', categoryKey: 'cat_oilseeds', price: '₹8,635', unitKey: 'unit_qtl', type: 'msp', infoKey: 'crop_sesamum_info', imageUrl: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSLMgjAQl3wdWkJQnwSCcUstTu46jE-MEG6ovi-CdO15w&s=10' },
+  { name: 'Cotton', nameKey: 'crop_cotton', categoryKey: 'cat_commercial', price: '₹6,620', unitKey: 'unit_qtl', type: 'msp', infoKey: 'crop_cotton_info', imageUrl: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQ37_I1jcPPym1aAIlyRfvgq24fdrhbfiEfJxMcwWAYew&s=10' },
+  { name: 'Tomato', nameKey: 'crop_tomato', categoryKey: 'cat_vegetables', price: '₹1,800', unitKey: 'unit_qtl', type: 'market', infoKey: 'crop_tomato_info', imageUrl: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTtdxfuLzkv7E0bZfVHgONpcEiqxxNEANPyB-MtmAP59K7E0yQSflBv27Y6&s=10' },
+  { name: 'Onion', nameKey: 'crop_onion', categoryKey: 'cat_vegetables', price: '₹2,200', unitKey: 'unit_qtl', type: 'market', infoKey: 'crop_onion_info', imageUrl: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR_flGpHFMgDuz2-7QnRJxoJALdzX9YU5ojoOFHYKPDvA&s=10' },
   { name: 'Potato', nameKey: 'crop_potato', categoryKey: 'cat_vegetables', price: '₹1,500', unitKey: 'unit_qtl', type: 'market', infoKey: 'crop_potato_info', imageUrl: 'https://images.unsplash.com/photo-1518977676601-b53f82aba655?auto=format&fit=crop&q=80&w=400' },
-  { name: 'Chilli', nameKey: 'crop_chilli', categoryKey: 'cat_vegetables', price: '₹19,000', unitKey: 'unit_qtl', type: 'market', infoKey: 'crop_chilli_info', imageUrl: 'https://images.unsplash.com/photo-1588166524941-3bf61a9c41db?auto=format&fit=crop&q=80&w=400' },
-  { name: 'Turmeric', nameKey: 'crop_turmeric', categoryKey: 'cat_commercial', price: '₹12,500', unitKey: 'unit_qtl', type: 'market', infoKey: 'crop_turmeric_info', imageUrl: 'https://images.unsplash.com/photo-1615485290382-441e4d049cb5?auto=format&fit=crop&q=80&w=400' }
+  { name: 'Chilli', nameKey: 'crop_chilli', categoryKey: 'cat_vegetables', price: '₹19,000', unitKey: 'unit_qtl', type: 'market', infoKey: 'crop_chilli_info', imageUrl: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcS5XsLmgCruZbqeiSbh_F_RdXpGnUx_BlQs7jwjfHAgFg&s' },
+  { name: 'Turmeric', nameKey: 'crop_turmeric', categoryKey: 'cat_commercial', price: '₹12,500', unitKey: 'unit_qtl', type: 'market', infoKey: 'crop_turmeric_info', imageUrl: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcS-K9NAwhVCo5lkM8WPjFAhtDgr3vhDDcXh8sE3DhrPxQ&s=10' }
 ];
 
 const FarmerDashboard: React.FC = () => {
@@ -89,7 +89,7 @@ const FarmerDashboard: React.FC = () => {
   const { t, language, setLanguage } = useLanguage();
 
 
-  
+
   // Navigation / Tab states
   const [activeTab, setActiveTab] = useState<'overview' | 'register' | 'register-produce' | 'msp' | 'procurement' | 'booking'>('overview');
   const [registrations, setRegistrations] = useState<Registration[]>([]);
@@ -100,7 +100,7 @@ const FarmerDashboard: React.FC = () => {
   // Procurement states
   const [procurements, setProcurements] = useState<ProcurementDetail[]>([]);
   const [loadingProcurements, setLoadingProcurements] = useState(false);
-  
+
   // MSP Search & Filter states
   const [mspSearchQuery, setMspSearchQuery] = useState('');
   const [mspCategoryFilter, setMspCategoryFilter] = useState('All');
@@ -135,7 +135,7 @@ const FarmerDashboard: React.FC = () => {
     harvest_date: new Date().toISOString().split('T')[0],
     produce_ready_status: 'Ready'
   });
-  
+
   // Camera Simulator states
   const [cameraOpen, setCameraOpen] = useState(false);
   const [imageType, setImageType] = useState<'full_produce' | 'close_up' | 'storage_view'>('full_produce');
@@ -144,7 +144,7 @@ const FarmerDashboard: React.FC = () => {
   const [webcamActive, setWebcamActive] = useState(false);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  
+
   // AI report state
   const [aiReport, setAiReport] = useState<any>(null);
   const [analyzing, setAnalyzing] = useState(false);
@@ -165,27 +165,27 @@ const FarmerDashboard: React.FC = () => {
 
   useEffect(() => {
     fetchDashboardData();
-    
+
     // Load Voice Recognition
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (SpeechRecognition) {
       const rec = new SpeechRecognition();
       rec.continuous = false;
       rec.interimResults = false;
-      
+
       // Map speech language based on app language preference
       rec.lang = language === 'te' ? 'te-IN' : language === 'hi' ? 'hi-IN' : 'en-IN';
-      
+
       rec.onstart = () => {
         setVoiceActive(true);
         setVoiceText('Listening...');
         setVoiceReply('');
       };
-      
+
       rec.onend = () => {
         setVoiceActive(false);
       };
-      
+
       rec.onerror = (e: any) => {
         setVoiceActive(false);
         setVoiceText('Speech recognition error.');
@@ -207,7 +207,7 @@ const FarmerDashboard: React.FC = () => {
       setLoadingRegs(true);
       const regs = await apiFetch('/api/crops/my-registrations');
       setRegistrations(regs);
-      
+
       // Retrieve notifications
       const notifs = await apiFetch('/api/notifications');
       setNotifications(notifs);
@@ -233,7 +233,7 @@ const FarmerDashboard: React.FC = () => {
   const handleSelectReg = async (reg: Registration) => {
     setSelectedReg(reg);
     setAiReport(null);
-    
+
     // Check status-based assets
     if (['AI Reviewed', 'Sample Requested', 'Approved', 'Slot Booked', 'Procured', 'Payment Completed'].includes(reg.status)) {
       // Fetch AI report
@@ -258,7 +258,7 @@ const FarmerDashboard: React.FC = () => {
           land_area: parseFloat(formData.land_area)
         })
       });
-      
+
       confetti({ particleCount: 80, spread: 60, origin: { y: 0.8 } });
       fetchDashboardData();
       setActiveTab('overview');
@@ -290,11 +290,11 @@ const FarmerDashboard: React.FC = () => {
           expected_quantity: parseFloat(produceFormData.expected_quantity)
         })
       });
-      
+
       confetti({ particleCount: 80, spread: 60, origin: { y: 0.8 } });
       alert('Produce Registered Successfully!');
       fetchDashboardData();
-      
+
       // Select the newly registered produce to allow camera / assessment flow directly
       handleSelectReg(res);
       setActiveTab('overview');
@@ -323,7 +323,7 @@ const FarmerDashboard: React.FC = () => {
     setImageType(type);
     setCameraOpen(true);
     setWebcamActive(false);
-    
+
     // Get geolocation if browser permits
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
@@ -367,7 +367,7 @@ const FarmerDashboard: React.FC = () => {
 
   const captureImage = async () => {
     let imageSrc = '';
-    
+
     if (webcamActive && videoRef.current && canvasRef.current) {
       const video = videoRef.current;
       const canvas = canvasRef.current;
@@ -392,29 +392,29 @@ const FarmerDashboard: React.FC = () => {
         grad.addColorStop(1, '#b45309');
         ctx.fillStyle = grad;
         ctx.fillRect(0, 0, 640, 480);
-        
+
         // Draw some mock rice grain details
         ctx.fillStyle = 'rgba(255,255,255,0.4)';
         for (let i = 0; i < 200; i++) {
           ctx.beginPath();
           ctx.ellipse(
-            randomInRange(50, 590), 
-            randomInRange(50, 430), 
-            randomInRange(5, 12), 
-            randomInRange(2, 5), 
-            Math.random() * Math.PI, 
-            0, 
+            randomInRange(50, 590),
+            randomInRange(50, 430),
+            randomInRange(5, 12),
+            randomInRange(2, 5),
+            Math.random() * Math.PI,
+            0,
             2 * Math.PI
           );
           ctx.fill();
         }
-        
+
         // Stamp metadata
         ctx.fillStyle = '#ffffff';
         ctx.font = '14px monospace';
         ctx.fillText(`GPS: ${gpsData.lat.toFixed(4)}, ${gpsData.lng.toFixed(4)}`, 20, 430);
         ctx.fillText(`TIMESTAMP: ${new Date().toISOString()}`, 20, 450);
-        
+
         imageSrc = canvas.toDataURL('image/jpeg');
       }
     }
@@ -426,7 +426,7 @@ const FarmerDashboard: React.FC = () => {
     if (selectedReg) {
       try {
         const blob = await (await fetch(imageSrc)).blob();
-        
+
         const fd = new FormData();
         fd.append('file', blob, `${imageType}.jpg`);
         fd.append('image_type', imageType);
@@ -503,10 +503,10 @@ const FarmerDashboard: React.FC = () => {
       });
       setAiReport(res);
       fetchDashboardData();
-      
+
       // Update local selection status
       setSelectedReg(prev => prev ? { ...prev, status: 'AI Reviewed' } : null);
-      
+
       confetti({ particleCount: 50, colors: ['#22c55e', '#fbbf24'] });
     } catch (err: any) {
       alert(err.message || 'AI assessment failed.');
@@ -568,7 +568,7 @@ const FarmerDashboard: React.FC = () => {
   };
 
   const processVoiceCommand = (text: string) => {
-    const query = text.toLowerCase().trim().replace(/[.,/#!$%^&*;:{}=\-_`~()?]/g,"");
+    const query = text.toLowerCase().trim().replace(/[.,/#!$%^&*;:{}=\-_`~()?]/g, "");
     let reply = '';
     let voiceLang = 'en-US';
 
@@ -657,7 +657,7 @@ const FarmerDashboard: React.FC = () => {
     }
 
     setVoiceReply(reply);
-    
+
     // Trigger speech synthesis
     if ('speechSynthesis' in window) {
       window.speechSynthesis.cancel();
@@ -669,14 +669,14 @@ const FarmerDashboard: React.FC = () => {
 
   const getTimelineSteps = () => {
     return [
-      'Registered', 
-      'Images Uploaded', 
-      'AI Reviewed', 
-      'Awaiting Verification', 
-      'Sample Verified', 
-      'Approved', 
-      'Slot Booked', 
-      'Procured', 
+      'Registered',
+      'Images Uploaded',
+      'AI Reviewed',
+      'Awaiting Verification',
+      'Sample Verified',
+      'Approved',
+      'Slot Booked',
+      'Procured',
       'Payment Completed'
     ];
   };
@@ -692,7 +692,7 @@ const FarmerDashboard: React.FC = () => {
   const filteredMspItems = mspProduceItems.filter(item => {
     const cropNameTranslated = t(item.nameKey).toLowerCase();
     const matchesSearch = cropNameTranslated.includes(mspSearchQuery.toLowerCase()) || item.name.toLowerCase().includes(mspSearchQuery.toLowerCase());
-    
+
     const catMap: Record<string, string> = {
       'All': 'All',
       'Grains': 'cat_grains',
@@ -700,7 +700,7 @@ const FarmerDashboard: React.FC = () => {
       'Vegetables': 'cat_vegetables',
       'Oilseeds': 'cat_oilseeds'
     };
-    
+
     const targetCat = catMap[mspCategoryFilter] || 'All';
     const matchesCategory = targetCat === 'All' || item.categoryKey === targetCat;
     return matchesSearch && matchesCategory;
@@ -784,11 +784,10 @@ const FarmerDashboard: React.FC = () => {
                   setSelectedReg(null);
                   if (tab.id === 'procurement') fetchProcurements();
                 }}
-                className={`w-full flex items-center justify-between px-4 py-3 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
-                  activeTab === tab.id 
-                    ? 'bg-emerald-600 border-emerald-650 text-white shadow-md' 
-                    : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-100'
-                }`}
+                className={`w-full flex items-center justify-between px-4 py-3 rounded-xl border text-xs font-bold transition-all cursor-pointer ${activeTab === tab.id
+                  ? 'bg-emerald-600 border-emerald-650 text-white shadow-md'
+                  : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-100'
+                  }`}
               >
                 <div className="flex items-center gap-3">
                   <tab.icon className="h-5 w-5" />
@@ -810,7 +809,7 @@ const FarmerDashboard: React.FC = () => {
                 <p className="text-[9px] text-slate-450 font-bold uppercase">Multi-lingual Navigation</p>
               </div>
             </div>
-            
+
             <p className="text-[10px] text-slate-450 leading-relaxed font-semibold">
               Say commands like: <b>"Register Crop"</b>, <b>"భారత్ మద్దతు ధర"</b>, or <b>"भुगतान स्थिति"</b> to auto-navigate.
             </p>
@@ -818,11 +817,10 @@ const FarmerDashboard: React.FC = () => {
             <button
               type="button"
               onClick={startListening}
-              className={`w-full py-2.5 rounded-xl border text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-2 ${
-                voiceActive 
-                  ? 'bg-red-500 border-red-400 text-white animate-pulse' 
-                  : 'bg-emerald-600 border-emerald-650 text-white shadow-sm hover:bg-emerald-700'
-              }`}
+              className={`w-full py-2.5 rounded-xl border text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-2 ${voiceActive
+                ? 'bg-red-500 border-red-400 text-white animate-pulse'
+                : 'bg-emerald-600 border-emerald-650 text-white shadow-sm hover:bg-emerald-700'
+                }`}
             >
               <Mic className="h-4 w-4" />
               {voiceActive ? t('voice_btn_listening') : t('voice_btn_start')}
@@ -839,8 +837,8 @@ const FarmerDashboard: React.FC = () => {
               <div className="bg-emerald-550/10 text-emerald-850 border border-emerald-100 p-3 rounded-xl space-y-1.5 text-xs">
                 <p className="text-[9px] uppercase font-bold text-emerald-600">Response:</p>
                 <p className="font-bold leading-relaxed text-slate-850">{voiceReply}</p>
-                <button 
-                  onClick={() => setVoiceReply('')} 
+                <button
+                  onClick={() => setVoiceReply('')}
                   className="text-[9px] text-slate-450 hover:text-slate-700 hover:underline font-bold mt-1 block"
                 >
                   Dismiss
@@ -937,7 +935,7 @@ const FarmerDashboard: React.FC = () => {
                     {/* Active registrations listing */}
                     <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm">
                       <h3 className="text-sm font-bold text-slate-800 mb-4">My Crop & Produce Registrations</h3>
-                      
+
                       {loadingRegs ? (
                         <div className="space-y-3">
                           <div className="h-14 bg-slate-100 animate-pulse rounded-xl" />
@@ -952,40 +950,37 @@ const FarmerDashboard: React.FC = () => {
                       ) : (
                         <div className="space-y-3">
                           {registrations.map((reg) => (
-                            <div 
+                            <div
                               key={reg.id}
                               onClick={() => handleSelectReg(reg)}
                               className="flex items-center justify-between p-4 border border-slate-100 hover:border-emerald-500/30 rounded-2xl hover:bg-emerald-50/10 cursor-pointer transition-all group"
                             >
                               <div className="flex items-center gap-3">
-                                <div className={`h-10 w-10 rounded-xl flex items-center justify-center font-bold text-sm ${
-                                  reg.crop_stage === 'Harvested' ? 'bg-yellow-50 text-yellow-750' : 'bg-emerald-50 text-emerald-750'
-                                }`}>
+                                <div className={`h-10 w-10 rounded-xl flex items-center justify-center font-bold text-sm ${reg.crop_stage === 'Harvested' ? 'bg-yellow-50 text-yellow-750' : 'bg-emerald-50 text-emerald-750'
+                                  }`}>
                                   {reg.crop_stage === 'Harvested' ? '📦' : '🌱'}
                                 </div>
                                 <div>
                                   <div className="flex items-center gap-2">
                                     <h4 className="text-xs font-extrabold text-slate-900">{reg.crop_name}</h4>
-                                    <span className={`text-[8px] font-bold px-1.5 py-0.5 rounded ${
-                                      reg.crop_stage === 'Harvested' ? 'bg-yellow-50 text-yellow-700' : 'bg-emerald-50 text-emerald-700'
-                                    }`}>
+                                    <span className={`text-[8px] font-bold px-1.5 py-0.5 rounded ${reg.crop_stage === 'Harvested' ? 'bg-yellow-50 text-yellow-700' : 'bg-emerald-50 text-emerald-700'
+                                      }`}>
                                       {reg.crop_stage}
                                     </span>
                                   </div>
                                   <p className="text-[10px] text-slate-400 font-mono mt-0.5">{reg.registration_number}</p>
                                 </div>
                               </div>
-                              
+
                               <div className="flex items-center gap-4">
                                 <div className="text-right hidden sm:block">
                                   <p className="text-xs font-bold text-slate-750">{reg.expected_quantity} {reg.quantity_unit || 'Qtl'}</p>
                                   <p className="text-[9px] text-slate-400">{reg.village}, {reg.district}</p>
                                 </div>
-                                <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold ${
-                                  reg.status === 'Payment Completed' ? 'bg-emerald-100 text-emerald-805' :
+                                <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold ${reg.status === 'Payment Completed' ? 'bg-emerald-100 text-emerald-805' :
                                   reg.status === 'Approved' || reg.status === 'Sample Verified' ? 'bg-emerald-50 text-emerald-700' :
-                                  reg.status === 'Slot Booked' ? 'bg-amber-100 text-amber-805' : 'bg-slate-100 text-slate-600'
-                                }`}>
+                                    reg.status === 'Slot Booked' ? 'bg-amber-100 text-amber-805' : 'bg-slate-100 text-slate-600'
+                                  }`}>
                                   {reg.status}
                                 </span>
                                 <ChevronRight className="h-4 w-4 text-slate-400 group-hover:translate-x-1 transition-transform" />
@@ -999,7 +994,7 @@ const FarmerDashboard: React.FC = () => {
                 ) : (
                   /* REGISTRATION DETAIL FLOW PANELS */
                   <div className="space-y-6">
-                    <button 
+                    <button
                       onClick={() => setSelectedReg(null)}
                       className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-800 transition-colors font-bold cursor-pointer"
                     >
@@ -1013,9 +1008,8 @@ const FarmerDashboard: React.FC = () => {
                         <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm relative overflow-hidden">
                           <div className="flex justify-between items-start border-b pb-4 mb-4">
                             <div>
-                              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                                selectedReg.crop_stage === 'Harvested' ? 'bg-yellow-50 text-yellow-700' : 'bg-emerald-50 text-emerald-700'
-                              }`}>
+                              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${selectedReg.crop_stage === 'Harvested' ? 'bg-yellow-50 text-yellow-700' : 'bg-emerald-50 text-emerald-700'
+                                }`}>
                                 {selectedReg.crop_stage} Registration Details
                               </span>
                               <h3 className="text-base font-extrabold text-slate-900 mt-2">{selectedReg.crop_name} ({selectedReg.expected_quantity} {selectedReg.quantity_unit || 'Qtl'})</h3>
@@ -1080,18 +1074,16 @@ const FarmerDashboard: React.FC = () => {
                             <button
                               type="button"
                               onClick={() => setImageSourceOption('live')}
-                              className={`flex-1 text-center py-2 text-xs font-bold rounded-lg transition-all cursor-pointer ${
-                                imageSourceOption === 'live' ? 'bg-white text-emerald-700 shadow-sm' : 'text-slate-500 hover:text-slate-800'
-                              }`}
+                              className={`flex-1 text-center py-2 text-xs font-bold rounded-lg transition-all cursor-pointer ${imageSourceOption === 'live' ? 'bg-white text-emerald-700 shadow-sm' : 'text-slate-500 hover:text-slate-800'
+                                }`}
                             >
                               {t('capture_photo_option')}
                             </button>
                             <button
                               type="button"
                               onClick={() => setImageSourceOption('upload')}
-                              className={`flex-1 text-center py-2 text-xs font-bold rounded-lg transition-all cursor-pointer ${
-                                imageSourceOption === 'upload' ? 'bg-white text-emerald-700 shadow-sm' : 'text-slate-500 hover:text-slate-800'
-                              }`}
+                              className={`flex-1 text-center py-2 text-xs font-bold rounded-lg transition-all cursor-pointer ${imageSourceOption === 'upload' ? 'bg-white text-emerald-700 shadow-sm' : 'text-slate-500 hover:text-slate-800'
+                                }`}
                             >
                               {t('upload_photo_option')}
                             </button>
@@ -1120,7 +1112,7 @@ const FarmerDashboard: React.FC = () => {
                                         {source}
                                       </span>
                                     </div>
-                                    
+
                                     <div className="bg-white border border-slate-100 rounded-xl p-3 space-y-2 text-[10px] text-slate-500 font-semibold shadow-sm">
                                       <p className="flex justify-between items-center">
                                         <span>{t('image_source_label')}</span>
@@ -1155,14 +1147,14 @@ const FarmerDashboard: React.FC = () => {
                                   </button>
                                 ) : (
                                   <>
-                                    <input 
-                                      type="file" 
-                                      accept="image/*" 
-                                      onChange={handleLocalImageUpload} 
-                                      className="hidden" 
-                                      id="local-upload-input" 
+                                    <input
+                                      type="file"
+                                      accept="image/*"
+                                      onChange={handleLocalImageUpload}
+                                      className="hidden"
+                                      id="local-upload-input"
                                     />
-                                    <label 
+                                    <label
                                       htmlFor="local-upload-input"
                                       className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-extrabold px-5 py-2.5 rounded-xl shadow-md transition-all inline-flex items-center gap-2 cursor-pointer"
                                     >
@@ -1272,7 +1264,7 @@ const FarmerDashboard: React.FC = () => {
                                 </div>
                               </div>
                               <div className="overflow-hidden h-2 mb-4 text-xs flex rounded-full bg-slate-100">
-                                <div 
+                                <div
                                   style={{ width: selectedReg.status === 'Payment Completed' ? '100%' : '50%' }}
                                   className="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-emerald-500 transition-all duration-500"
                                 />
@@ -1325,15 +1317,13 @@ const FarmerDashboard: React.FC = () => {
 
                               return (
                                 <div key={step} className="relative">
-                                  <div className={`absolute -left-[31px] top-0 h-4 w-4 rounded-full border-2 flex items-center justify-center transition-all ${
-                                    isCompleted ? 'bg-emerald-500 border-emerald-500 text-white' : 'bg-white border-slate-350 text-transparent'
-                                  }`}>
+                                  <div className={`absolute -left-[31px] top-0 h-4 w-4 rounded-full border-2 flex items-center justify-center transition-all ${isCompleted ? 'bg-emerald-500 border-emerald-500 text-white' : 'bg-white border-slate-350 text-transparent'
+                                    }`}>
                                     {isCompleted && <span className="text-[8px] font-bold">✓</span>}
                                   </div>
                                   <div className="pl-1">
-                                    <p className={`font-bold transition-colors ${
-                                      isCurrent ? 'text-emerald-650' : isCompleted ? 'text-slate-800' : 'text-slate-400'
-                                    }`}>
+                                    <p className={`font-bold transition-colors ${isCurrent ? 'text-emerald-650' : isCompleted ? 'text-slate-800' : 'text-slate-400'
+                                      }`}>
                                       {t(`status_${step.toLowerCase().replace(' ', '_')}`) || step}
                                     </p>
                                   </div>
@@ -1750,21 +1740,19 @@ const FarmerDashboard: React.FC = () => {
                           <p className="font-semibold text-slate-805 leading-tight">{proc.centre_name}</p>
                         </div>
                         <div>
-                          <span className={`inline-block rounded-full px-2 py-0.5 text-[10px] font-bold ${
-                            proc.status === 'Payment Completed' ? 'bg-emerald-100 text-emerald-805' :
+                          <span className={`inline-block rounded-full px-2 py-0.5 text-[10px] font-bold ${proc.status === 'Payment Completed' ? 'bg-emerald-100 text-emerald-805' :
                             proc.status === 'Procured' ? 'bg-blue-100 text-blue-800' :
-                            proc.status === 'Slot Booked' ? 'bg-amber-100 text-amber-805' :
-                            'bg-slate-100 text-slate-600'
-                          }`}>
+                              proc.status === 'Slot Booked' ? 'bg-amber-100 text-amber-805' :
+                                'bg-slate-100 text-slate-600'
+                            }`}>
                             {proc.status}
                           </span>
                         </div>
                         <div>
-                          <span className={`inline-block rounded-full px-2 py-0.5 text-[10px] font-bold ${
-                            proc.payment_status === 'Completed' ? 'bg-emerald-100 text-emerald-805' :
+                          <span className={`inline-block rounded-full px-2 py-0.5 text-[10px] font-bold ${proc.payment_status === 'Completed' ? 'bg-emerald-100 text-emerald-805' :
                             proc.payment_status === 'Initiated' || proc.payment_status === 'Processing' ? 'bg-blue-100 text-blue-800' :
-                            'bg-slate-100 text-slate-600'
-                          }`}>
+                              'bg-slate-100 text-slate-600'
+                            }`}>
                             {proc.payment_status}
                           </span>
                         </div>
@@ -1796,7 +1784,7 @@ const FarmerDashboard: React.FC = () => {
                       </h3>
                       <p className="text-xs text-slate-400 mt-1">{t('pricing_hub_desc')}</p>
                     </div>
-                    
+
                     {/* Demo Warning Banner */}
                     <div className="flex items-center gap-2 bg-amber-50 border border-amber-205 text-amber-850 p-2.5 rounded-xl text-[10px] font-bold">
                       <AlertCircle className="h-4 w-4 text-amber-600 shrink-0" />
@@ -1816,17 +1804,16 @@ const FarmerDashboard: React.FC = () => {
                         className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 pl-10 pr-4 text-xs font-semibold focus:outline-none focus:border-emerald-500 focus:bg-white"
                       />
                     </div>
-                    
+
                     <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
                       {['All', 'Grains', 'Pulses', 'Vegetables', 'Oilseeds'].map((cat) => (
                         <button
                           key={cat}
                           onClick={() => setMspCategoryFilter(cat)}
-                          className={`px-3 py-2 rounded-xl text-xs font-bold whitespace-nowrap cursor-pointer transition-all ${
-                            mspCategoryFilter === cat 
-                              ? 'bg-emerald-600 text-white shadow-sm' 
-                              : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                          }`}
+                          className={`px-3 py-2 rounded-xl text-xs font-bold whitespace-nowrap cursor-pointer transition-all ${mspCategoryFilter === cat
+                            ? 'bg-emerald-600 text-white shadow-sm'
+                            : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                            }`}
                         >
                           {cat === 'All' ? t('all_categories') : cat === 'Grains' ? t('grains') : cat === 'Pulses' ? t('pulses') : cat === 'Vegetables' ? t('vegetables') : t('oilseeds')}
                         </button>
@@ -1838,26 +1825,25 @@ const FarmerDashboard: React.FC = () => {
                 {/* Produce grid cards */}
                 <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
                   {filteredMspItems.map((item) => (
-                    <div 
-                      key={item.name} 
+                    <div
+                      key={item.name}
                       className="bg-white border border-slate-200 rounded-3xl overflow-hidden shadow-sm hover:shadow-md transition-all hover:translate-y-[-2px] flex flex-col justify-between"
                     >
                       {/* Crop Cover Image */}
                       <div className="h-40 w-full relative">
-                        <img 
-                          src={item.imageUrl} 
-                          alt={t(item.nameKey)} 
+                        <img
+                          src={item.imageUrl}
+                          alt={t(item.nameKey)}
                           className="h-full w-full object-cover"
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-                        <span className={`absolute top-3 right-3 text-[9px] font-extrabold uppercase px-2.5 py-1 rounded-full text-white shadow-sm ${
-                          item.type === 'msp' 
-                            ? 'bg-emerald-600 border border-emerald-500/30' 
-                            : 'bg-orange-600 border border-orange-500/30'
-                        }`}>
+                        <span className={`absolute top-3 right-3 text-[9px] font-extrabold uppercase px-2.5 py-1 rounded-full text-white shadow-sm ${item.type === 'msp'
+                          ? 'bg-emerald-600 border border-emerald-500/30'
+                          : 'bg-orange-600 border border-orange-500/30'
+                          }`}>
                           {item.type === 'msp' ? t('msp_rate_label') : t('demo_price_label')}
                         </span>
-                        
+
                         <div className="absolute bottom-3 left-3 text-white">
                           <h4 className="text-sm font-extrabold">{t(item.nameKey)}</h4>
                           <span className="text-[9px] text-slate-200 font-bold uppercase bg-white/20 backdrop-blur-sm px-2 py-0.5 rounded mt-1 inline-block">
@@ -1883,7 +1869,7 @@ const FarmerDashboard: React.FC = () => {
                       </div>
                     </div>
                   ))}
-                  
+
                   {filteredMspItems.length === 0 && (
                     <div className="col-span-full text-center py-16 bg-white border border-slate-200 rounded-3xl text-slate-405">
                       <Search className="h-10 w-10 mx-auto opacity-30 mb-2" />
@@ -2084,7 +2070,7 @@ const FarmerDashboard: React.FC = () => {
       <AnimatePresence>
         {cameraOpen && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 px-4">
-            <motion.div 
+            <motion.div
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}

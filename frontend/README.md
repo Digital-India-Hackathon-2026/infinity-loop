@@ -1,32 +1,81 @@
-# React + TypeScript + Vite
+# Farmer2Gov Frontend 💻
+> **A React + TypeScript + Vite web application built with interactive maps, rich charts, and responsive role-based dashboards.**
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+This directory contains the client-side code of the Farmer2Gov Digital Public Infrastructure (DPI) application. 
 
-Currently, two official plugins are available:
+---
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## 🎨 Tech Stack & Libraries
 
-## React Compiler
+- **Core**: React 19, TypeScript, and Vite 8
+- **Styling**: Tailwind CSS v4 & PostCSS
+- **Animations**: Framer Motion
+- **Charts & Data Viz**: Recharts (interactive SVGs)
+- **Maps**: Leaflet & React-Leaflet
+- **Icons**: Lucide React
+- **Celebration Effects**: Canvas Confetti
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+---
 
-## Expanding the Oxlint configuration
+## 📁 Directory Structure
 
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
-
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+```text
+frontend/
+├── src/
+│   ├── assets/        # Static logos, icons, and image assets
+│   ├── components/    # Reusable UI controls and Router Guards (e.g. ProtectedRoute.tsx)
+│   ├── contexts/      # Auth (session status) and Language (translation) state providers
+│   ├── pages/         # Core pages and role-based portals:
+│   │   ├── LanguageSelector.tsx # Welcome / initial language screen
+│   │   ├── LandingPage.tsx      # Core informational portal
+│   │   ├── Login.tsx            # Unified login with password/OTP option
+│   │   ├── Register.tsx         # Farmer registration dashboard
+│   │   ├── FarmerDashboard.tsx  # Register crops, upload photo, schedule drop-offs
+│   │   ├── OfficerDashboard.tsx # Verify weight, record moisture, print receipts
+│   │   └── AdminDashboard.tsx   # Visualize state analytics, Recharts curves, forecasts
+│   ├── App.tsx        # Application entry routing configuration
+│   └── index.css      # Core styles, glassmorphism, transitions, and Tailwind directives
+├── tailwind.config.js # Custom theme configurations
+├── package.json       # App scripts, versions, and libraries
+└── tsconfig.json      # TypeScript specifications
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+---
+
+## 🚀 Setup & Commands
+
+To get the frontend up and running locally:
+
+1. **Install dependencies:**
+   ```bash
+   npm install
+   ```
+
+2. **Run in development mode:**
+   ```bash
+   npm run dev
+   ```
+   *The application will launch on [http://localhost:5173](http://localhost:5173).*
+
+3. **Build for production:**
+   ```bash
+   npm run build
+   ```
+
+4. **Lint code:**
+   ```bash
+   npm run lint
+   ```
+
+---
+
+## 🔌 Connecting to the Backend API
+
+By default, the client is configured to connect to the backend running at:
+`http://localhost:8000`
+
+If your backend is running on a different port or server, update the following variables:
+- `API_BASE` in `src/pages/Login.tsx`
+- `API_BASE` in `src/pages/Register.tsx`
+- `API_BASE_URL` in `src/contexts/AuthContext.tsx`
+

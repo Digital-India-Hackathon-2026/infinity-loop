@@ -21,20 +21,31 @@ const LanguageSelector: React.FC = () => {
   ];
 
   return (
-    <div className="relative flex min-h-screen flex-col items-center justify-center px-4 py-8 sm:py-12 bg-gradient-to-br from-[#faf9f6] via-[#f1fcf4] to-[#fcfcf0] text-slate-800">
-      
+    <div className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden px-4 py-8 sm:py-12 bg-gradient-to-br from-[#faf9f6] via-[#f1fcf4] to-[#fcfcf0] text-slate-800">
+      {/* Background Farm Image */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <img
+          src="https://wallpapercave.com/wp/wp2957190.jpg"
+          alt="Farm Background"
+          className="w-full h-full object-cover opacity-60"
+        />
+      </div>
+
+      {/* Light Overlay */}
+      <div className="absolute inset-0 bg-white/45" />
+
       {/* Background Decorative Organic blobs */}
       <div className="absolute top-10 left-10 w-72 h-72 bg-emerald-200/20 rounded-full blur-3xl pointer-events-none" />
       <div className="absolute bottom-10 right-10 w-80 h-80 bg-amber-200/10 rounded-full blur-3xl pointer-events-none" />
 
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
         className="relative z-10 w-full max-w-5xl bg-white/95 border border-emerald-100 shadow-2xl rounded-3xl p-6 sm:p-10 backdrop-blur-md"
       >
         <div className="grid gap-8 lg:grid-cols-12 items-center">
-          
+
           {/* Left Column: Farmers Illustration */}
           <div className="lg:col-span-5 flex flex-col items-center text-center">
             <motion.div
@@ -43,16 +54,16 @@ const LanguageSelector: React.FC = () => {
               transition={{ delay: 0.2, duration: 0.5 }}
               className="relative max-w-xs sm:max-w-sm flex items-center justify-center p-4 bg-emerald-50/30 rounded-full border border-emerald-100/50"
             >
-              <img 
-                src={farmerIllustration} 
-                alt="Indian Farmer Illustration" 
+              <img
+                src={farmerIllustration}
+                alt="Indian Farmer Illustration"
                 className="w-full h-auto object-contain drop-shadow-xl max-h-[320px]"
               />
             </motion.div>
             <div className="mt-6 hidden lg:block">
               <span className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-200 shadow-sm">
                 <ShieldCheck className="h-4 w-4 text-emerald-600" />
-                Aadhaar Enabled Secure DBT
+                Trust. Transparency. Growth.
               </span>
             </div>
           </div>
@@ -109,7 +120,7 @@ const LanguageSelector: React.FC = () => {
 
             <div className="mt-8 flex items-center justify-center lg:justify-start gap-2.5 text-xs text-emerald-800 font-bold bg-emerald-50/50 py-3 px-4 rounded-xl border border-emerald-100 max-w-md shadow-sm">
               <ShieldCheck className="h-5 w-5 text-emerald-600 shrink-0" />
-              <span>Aadhaar-linked Safe & Secure Direct Transfers</span>
+              <span>Safe & Easy Access to Government Procurement</span>
             </div>
 
             <div className="mt-8 text-center lg:text-left text-[10px] text-slate-450 font-semibold tracking-wide border-t border-slate-100 pt-4">
