@@ -1,0 +1,240 @@
+import datetime
+from sqlalchemy import Column, Integer, String, Float, DateTime, Boolean, ForeignKey, Text
+from sqlalchemy.orm import relationship
+from .database import Base
+
+class User(Base):
+    __tablename__ = "users"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, nullable=False)
+    email = Column(String, unique=True, index=True, nullable=True)
+    phone = Column(String, unique=True, index=True, nullable=False)
+    hashed_password = Column(String, nullable=False)
+    role = Column(String, nullable=False)  # "farmer", "officer", "admin"
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+
+    # Relationships
+    farmer_profile = relationship("Farmer", back_populates="user", uselist=False, cascade="all, delete-orphan")
+    officer_profile = relationship("Officer", back_populates="user", uselist=False, cascade="all, delete-orphan")
+    admin_profile = relationship("Administrator", back_populates="user", uselist=False, cascade="all, delete-orphan")
+    notifications = relationship("Notification", back_populates="user", cascade="all, delete-orphan")
+    audit_logs = relationship("AuditLog", back_populates="user", cascade="all, delete-orphan")
+
+
+class Farmer(Base):
+    __tablename__ = "farmers"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    land_area = Column(Float, nullable=False)  # in acres
+    state = Column(String, nullable=False)
+    district = Column(String, nullable=False)
+    mandal = Column(String, nullable=False)
+    village = Column(String, nullable=False)
+    language_preference = Column(String, default="en")  # "en", "te", "hi"
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+
+    user = relationship("User", back_populates="farmer_profile")
+    registrations = relationship("CropRegistration", back_populates="farmer", cascade="all, delete-orphan")
+    payments = relationship("Payment", back_populates="farmer", cascade="all, delete-orphan")
+
+
+class Officer(Base):
+    __tablename__ = "officers"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    centre_id = Column(Integer, ForeignKey("procurement_centres.id", ondelete="SET NULL"), nullable=True)
+    department = Column(String, nullable=False)
+    badge_number = Column(String, unique=True, index=True, nullable=False)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+
+    user = relationship("User", back_populates="officer_profile")
+    centre = relationship("ProcurementCentre", back_populates="officers")
+    verifications = relationship("SampleVerification", back_populates="officer")
+    procurements = relationship("Procurement", back_populates="officer")
+
+
+class Administrator(Base):
+    __tablename__ = "administrators"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    department = Column(String, nullable=False)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+
+    user = relationship("User", back_populates="admin_profile")
+
+
+class ProcurementCentre(Base):
+    __tablename__ = "procurement_centres"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, nullable=False)
+    district = Column(String, nullable=False)
+    mandal = Column(String, nullable=False)
+    latitude = Column(Float, nullable=False)
+    longitude = Column(Float, nullable=False)
+    contact_number = Column(String, nullable=False)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+
+    officers = relationship("Officer", back_populates="centre")
+    procurements = relationship("Procurement", back_populates="centre")
+
+
+class CropRegistration(Base):
+    __tablename__ = "crop_registrations"
+
+    id = Column(Integer, primary_key=True, index=True)
+    registration_number = Column(String, unique=True, index=True, nullable=False)  # F2G-PH-2026-XXXX
+    farmer_id = Column(Integer, ForeignKey("farmers.id", ondelete="CASCADE"), nullable=False)
+    crop_name = Column(String, nullable=False)
+    crop_stage = Column(String, nullable=False)  # "Pre-Harvest", "Harvest Ready", "Harvested"
+    expected_harvest_month = Column(String, nullable=False)
+    expected_quantity = Column(Float, nullable=False)  # in quintals
+    land_area = Column(Float, nullable=False)  # in acres
+    state = Column(String, nullable=False)
+    district = Column(String, nullable=False)
+    mandal = Column(String, nullable=False)
+    village = Column(String, nullable=False)
+    phone_number = Column(String, nullable=False)
+    status = Column(String, default="Registered")  # "Registered", "Images Uploaded", "AI Reviewed", "Sample Requested", "Sample Verified", "Approved", "Slot Booked", "Procured", "Payment Initiated", "Payment Completed"
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+
+    farmer = relationship("Farmer", back_populates="registrations")
+    images = relationship("ProduceImage", back_populates="registration", cascade="all, delete-orphan")
+    ai_assessment = relationship("AIAssessment", back_populates="registration", uselist=False, cascade="all, delete-orphan")
+    sample_verification = relationship("SampleVerification", back_populates="registration", uselist=False, cascade="all, delete-orphan")
+    procurement = relationship("Procurement", back_populates="registration", uselist=False, cascade="all, delete-orphan")
+
+
+class ProduceImage(Base):
+    __tablename__ = "produce_images"
+
+    id = Column(Integer, primary_key=True, index=True)
+    registration_id = Column(Integer, ForeignKey("crop_registrations.id", ondelete="CASCADE"), nullable=False)
+    image_url = Column(String, nullable=False)  # local file path or base64 data
+    image_type = Column(String, nullable=False)  # "full_produce", "close_up", "storage_view"
+    gps_latitude = Column(Float, nullable=False)
+    gps_longitude = Column(Float, nullable=False)
+    gps_location_name = Column(String, nullable=False)
+    device_info = Column(String, nullable=False)
+    timestamp = Column(DateTime, default=datetime.datetime.utcnow)
+
+    registration = relationship("CropRegistration", back_populates="images")
+
+
+class AIAssessment(Base):
+    __tablename__ = "ai_assessments"
+
+    id = Column(Integer, primary_key=True, index=True)
+    registration_id = Column(Integer, ForeignKey("crop_registrations.id", ondelete="CASCADE"), nullable=False)
+    crop_name = Column(String, nullable=False)
+    confidence = Column(Float, nullable=False)
+    visual_quality = Column(String, nullable=False)  # "Excellent", "Good", "Average", "Poor"
+    grain_uniformity = Column(Float, nullable=False)  # percentage
+    foreign_material = Column(Float, nullable=False)  # percentage
+    estimated_moisture = Column(Float, nullable=False)  # percentage
+    score = Column(Float, nullable=False)  # overall score out of 100
+    recommendation = Column(String, nullable=False)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+
+    registration = relationship("CropRegistration", back_populates="ai_assessment")
+
+
+class SampleVerification(Base):
+    __tablename__ = "sample_verifications"
+
+    id = Column(Integer, primary_key=True, index=True)
+    registration_id = Column(Integer, ForeignKey("crop_registrations.id", ondelete="CASCADE"), nullable=False)
+    officer_id = Column(Integer, ForeignKey("officers.id", ondelete="SET NULL"), nullable=True)
+    moisture = Column(Float, nullable=False)  # percentage
+    foreign_matter = Column(Float, nullable=False)  # percentage
+    grain_quality = Column(String, nullable=False)  # "A Grade", "B Grade", "Common", "Rejected"
+    remarks = Column(Text, nullable=True)
+    status = Column(String, nullable=False)  # "Approved", "Rejected", "Need Reinspection"
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+
+    registration = relationship("CropRegistration", back_populates="sample_verification")
+    officer = relationship("Officer", back_populates="verifications")
+
+
+class Procurement(Base):
+    __tablename__ = "procurements"
+
+    id = Column(Integer, primary_key=True, index=True)
+    procurement_number = Column(String, unique=True, index=True, nullable=False)  # F2G-PR-2026-XXXX
+    registration_id = Column(Integer, ForeignKey("crop_registrations.id", ondelete="CASCADE"), nullable=False)
+    officer_id = Column(Integer, ForeignKey("officers.id", ondelete="SET NULL"), nullable=True)
+    centre_id = Column(Integer, ForeignKey("procurement_centres.id", ondelete="SET NULL"), nullable=True)
+    declared_quantity = Column(Float, nullable=False)  # in quintals
+    actual_quantity = Column(Float, nullable=False)  # in quintals
+    accepted_quantity = Column(Float, nullable=False)  # in quintals
+    msp_rate = Column(Float, nullable=False)  # in Rs. per quintal
+    total_amount = Column(Float, nullable=False)  # in Rs.
+    slot_date = Column(String, nullable=False)  # YYYY-MM-DD
+    slot_time = Column(String, nullable=False)  # "10:00 AM", "12:00 PM", "2:00 PM", "4:00 PM"
+    status = Column(String, default="Booked")  # "Booked", "Completed"
+    digital_receipt_url = Column(String, nullable=True)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+
+    registration = relationship("CropRegistration", back_populates="procurement")
+    officer = relationship("Officer", back_populates="procurements")
+    centre = relationship("ProcurementCentre", back_populates="procurements")
+    payment = relationship("Payment", back_populates="procurement", uselist=False, cascade="all, delete-orphan")
+
+
+class Payment(Base):
+    __tablename__ = "payments"
+
+    id = Column(Integer, primary_key=True, index=True)
+    procurement_id = Column(Integer, ForeignKey("procurements.id", ondelete="CASCADE"), nullable=False)
+    farmer_id = Column(Integer, ForeignKey("farmers.id", ondelete="CASCADE"), nullable=False)
+    amount = Column(Float, nullable=False)
+    status = Column(String, default="Pending")  # "Pending", "Initiated", "Processing", "Completed"
+    transaction_reference = Column(String, unique=True, index=True, nullable=True)
+    payment_date = Column(DateTime, nullable=True)
+    expected_date = Column(DateTime, nullable=True)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+
+    procurement = relationship("Procurement", back_populates="payment")
+    farmer = relationship("Farmer", back_populates="payments")
+
+
+class Notification(Base):
+    __tablename__ = "notifications"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    title = Column(String, nullable=False)
+    message = Column(Text, nullable=False)
+    is_read = Column(Boolean, default=False)
+    type = Column(String, default="general")  # "general", "ai_report", "harvest_reminder", "payment", "slot"
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+
+    user = relationship("User", back_populates="notifications")
+
+
+class MSPRate(Base):
+    __tablename__ = "msp_rates"
+
+    id = Column(Integer, primary_key=True, index=True)
+    crop_name = Column(String, unique=True, index=True, nullable=False)
+    msp_rate = Column(Float, nullable=False)  # in Rs. per quintal
+    expected_market_price = Column(Float, nullable=False)
+    government_notification_url = Column(String, nullable=True)
+    year = Column(String, default="2026-27")
+
+
+class AuditLog(Base):
+    __tablename__ = "audit_logs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    action = Column(String, nullable=False)
+    ip_address = Column(String, nullable=True)
+    details = Column(Text, nullable=True)
+    timestamp = Column(DateTime, default=datetime.datetime.utcnow)
+
+    user = relationship("User", back_populates="audit_logs")

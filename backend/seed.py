@@ -1,0 +1,371 @@
+import datetime
+import random
+from sqlalchemy.orm import Session
+from app.database import engine, SessionLocal, Base
+from app import models, auth, ai
+
+def clean_database(db: Session):
+    print("Clearing existing database tables...")
+    Base.metadata.drop_all(bind=engine)
+    Base.metadata.create_all(bind=engine)
+
+def add_notification(db: Session, user_id: int, title: str, message: str, notif_type: str = "general"):
+    notif = models.Notification(
+        user_id=user_id,
+        title=title,
+        message=message,
+        type=notif_type,
+        is_read=False
+    )
+    db.add(notif)
+
+def seed_data():
+    db = SessionLocal()
+    try:
+        clean_database(db)
+        print("Starting database seeding...")
+
+        # 1. Seed MSP Rates
+        msp_crops = [
+            {"crop_name": "Paddy", "msp_rate": 2183.0, "expected_market_price": 2050.0, "gov_url": "https://dacfw.nic.in/msp/paddy"},
+            {"crop_name": "Cotton", "msp_rate": 6620.0, "expected_market_price": 6200.0, "gov_url": "https://dacfw.nic.in/msp/cotton"},
+            {"crop_name": "Maize", "msp_rate": 2090.0, "expected_market_price": 1900.0, "gov_url": "https://dacfw.nic.in/msp/maize"},
+            {"crop_name": "Millets", "msp_rate": 3846.0, "expected_market_price": 3500.0, "gov_url": "https://dacfw.nic.in/msp/millets"}
+        ]
+        
+        for crop in msp_crops:
+            db_msp = models.MSPRate(
+                crop_name=crop["crop_name"],
+                msp_rate=crop["msp_rate"],
+                expected_market_price=crop["expected_market_price"],
+                government_notification_url=crop["gov_url"],
+                year="2026-27"
+            )
+            db.add(db_msp)
+        db.commit()
+        print("[OK] Seeded MSP Rates.")
+
+        # 2. Seed Procurement Centres
+        centres = [
+            {"name": "Warangal Agriculture Market Yard", "district": "Warangal", "mandal": "Hanamkonda", "lat": 17.9784, "lng": 79.5941, "contact": "0870-2451234"},
+            {"name": "Nalgonda PACS procurement centre", "district": "Nalgonda", "mandal": "Nalgonda", "lat": 17.0575, "lng": 79.2684, "contact": "08682-224455"},
+            {"name": "Nizamabad Gunj Centre", "district": "Nizamabad", "mandal": "Nizamabad", "lat": 18.6725, "lng": 78.0941, "contact": "08462-235612"},
+            {"name": "Khammam Rythu Bazar Depot", "district": "Khammam", "mandal": "Khammam", "lat": 17.2473, "lng": 80.1514, "contact": "08742-228990"},
+            {"name": "Guntur Mirchi Market Hub", "district": "Guntur", "mandal": "Guntur", "lat": 16.3067, "lng": 80.4365, "contact": "0863-223344"}
+        ]
+        
+        centre_objects = []
+        for c in centres:
+            db_centre = models.ProcurementCentre(
+                name=c["name"],
+                district=c["district"],
+                mandal=c["mandal"],
+                latitude=c["lat"],
+                longitude=c["lng"],
+                contact_number=c["contact"]
+            )
+            db.add(db_centre)
+            centre_objects.append(db_centre)
+        db.commit()
+        print("[OK] Seeded Procurement Centres.")
+
+        # 3. Seed 1 Admin User
+        admin_user = models.User(
+            name="Srinivas Rao",
+            email="admin@farmer2gov.gov.in",
+            phone="9999999999",
+            hashed_password=auth.get_password_hash("admin123"),
+            role="admin"
+        )
+        db.add(admin_user)
+        db.commit()
+        
+        db_admin = models.Administrator(
+            user_id=admin_user.id,
+            department="Department of Agriculture & Food Procurement"
+        )
+        db.add(db_admin)
+        db.commit()
+        print("[OK] Seeded Administrator User.")
+
+        # 4. Seed 20 Procurement Officers
+        officer_names = [
+            "Anil Kumar", "Venkatesh Prasad", "Rakesh Sharma", "Kiran Rao", "Suresh Goud",
+            "Madhusudhan Reddy", "Sanjay Dutt", "Prabhakar Rao", "Vijay Bhaskar", "Kalyan Kumar",
+            "Manoj Bajpayee", "Satish Chandra", "Narendra Dev", "Arvind Swamy", "Raghav G",
+            "Mohan Babu", "Jagapathi Raju", "Gopichand M", "Shrikanth T", "Ravi Teja"
+        ]
+        
+        officer_objects = []
+        for i, name in enumerate(officer_names):
+            phone = f"98000000{i:02d}"
+            email = f"officer_{i+1}@farmer2gov.gov.in"
+            
+            user = models.User(
+                name=name,
+                email=email,
+                phone=phone,
+                hashed_password=auth.get_password_hash("officer123"),
+                role="officer"
+            )
+            db.add(user)
+            db.commit()
+            
+            assigned_centre = centre_objects[i % len(centre_objects)]
+            
+            officer = models.Officer(
+                user_id=user.id,
+                centre_id=assigned_centre.id,
+                department="Food Corporation Coordination",
+                badge_number=f"F2G-OFF-2026-{1000 + i}"
+            )
+            db.add(officer)
+            officer_objects.append(officer)
+            
+        db.commit()
+        print("[OK] Seeded 20 Procurement Officers.")
+
+        # 5. Seed 100 Farmers
+        first_names = [
+            "Ramesh", "Suresh", "Ramulu", "Mallesh", "Yadaiah", "Krishna", "Venkat", "Anji", "Nagesh", "Balu",
+            "Konda", "Somulu", "Lachiram", "Jagan", "Narsaiah", "Rajesh", "Prakash", "Gopal", "Bhaskar", "Chandra",
+            "Satyam", "Srinivas", "Lingam", "Venu", "Devendar", "Mahender", "Hari", "Prasad", "Sathaiah", "Ellesh",
+            "Kishan", "Govind", "Balraj", "Ravinder", "Anil", "Shekhar", "Bheem", "Ganga", "Shiva", "Kumar",
+            "Kavitha", "Latha", "Priya", "Radha", "Renuka", "Saritha", "Manjula", "Sujatha", "Anitha", "Swapna"
+        ]
+        last_names = ["Goud", "Reddy", "Yadav", "Rao", "Kuruma", "Lambadi", "Naidu", "Chowdary", "Madiga", "Mala", "Bhat"]
+        
+        districts = ["Warangal", "Nalgonda", "Nizamabad", "Khammam", "Guntur", "Krishna", "Medak", "Kurnool"]
+        mandals = {
+            "Warangal": ["Hanamkonda", "Geesugonda", "Wardhannapet", "Dharmasagar"],
+            "Nalgonda": ["Nalgonda", "Miryalaguda", "Devarakonda", "Narketpally"],
+            "Nizamabad": ["Nizamabad", "Armoor", "Bodhan", "Bheemgal"],
+            "Khammam": ["Khammam", "Wyra", "Sathupally", "Madhira"],
+            "Guntur": ["Guntur", "Tenali", "Bapatla", "Narasaraopet"],
+            "Krishna": ["Machilipatnam", "Gudivada", "Vijayawada Rural", "Nuzvid"],
+            "Medak": ["Medak", "Sangareddy", "Zahirabad", "Narsapur"],
+            "Kurnool": ["Kurnool", "Adoni", "Nandyal", "Yemmiganur"]
+        }
+        villages = ["Madikonda", "Gopalapuram", "Rampally", "Peddapalli", "Dharmaram", "Vangara", "Chintal", "Mallapur"]
+        
+        farmer_objects = []
+        for i in range(100):
+            name = f"{random.choice(first_names)} {random.choice(last_names)}"
+            phone = f"98{random.randint(10000000, 99999999)}"
+            email = f"farmer_{i+1}@farmer2gov.gov.in"
+            
+            user = models.User(
+                name=name,
+                email=email,
+                phone=phone,
+                hashed_password=auth.get_password_hash("password123"),
+                role="farmer"
+            )
+            db.add(user)
+            db.commit()
+            
+            district = random.choice(districts)
+            state = "Andhra Pradesh" if district in ["Guntur", "Krishna", "Kurnool"] else "Telangana"
+            mandal = random.choice(mandals[district])
+            village = f"{random.choice(villages)} {i+1 if (random.random() > 0.5) else ''}"
+            
+            farmer = models.Farmer(
+                user_id=user.id,
+                land_area=round(random.uniform(2.5, 18.0), 1),
+                state=state,
+                district=district,
+                mandal=mandal,
+                village=village,
+                language_preference=random.choice(["en", "te", "hi"])
+            )
+            db.add(farmer)
+            farmer_objects.append(farmer)
+            
+        db.commit()
+        print("[OK] Seeded 100 Farmers.")
+
+        # 6. Seed 50 Crop Registrations spanning various stages
+        crops = ["Paddy", "Cotton", "Maize", "Millets"]
+        stages = ["Pre-Harvest", "Harvest Ready", "Harvested"]
+        months = ["July 2026", "August 2026", "September 2026"]
+        
+        status_pool = (
+            ["Registered"] * 10 + 
+            ["Images Uploaded"] * 5 + 
+            ["AI Reviewed"] * 8 + 
+            ["Sample Requested"] * 3 + 
+            ["Approved"] * 5 + 
+            ["Slot Booked"] * 5 + 
+            ["Procured"] * 7 + 
+            ["Payment Completed"] * 7
+        )
+        
+        while len(status_pool) < 50:
+            status_pool.append("Registered")
+            
+        random.shuffle(status_pool)
+
+        for i in range(50):
+            farmer = farmer_objects[i % len(farmer_objects)]
+            crop = random.choice(crops)
+            status = status_pool[i]
+            
+            reg_id = f"F2G-PH-2026-{1001 + i}"
+            qty = round(farmer.land_area * random.uniform(15.0, 22.0), 1)
+            created_date = datetime.datetime.utcnow() - datetime.timedelta(days=random.randint(2, 30))
+            
+            crop_reg = models.CropRegistration(
+                registration_number=reg_id,
+                farmer_id=farmer.id,
+                crop_name=crop,
+                crop_stage=random.choice(stages) if status in ["Registered", "Images Uploaded"] else "Harvested",
+                expected_harvest_month=random.choice(months),
+                expected_quantity=qty,
+                land_area=farmer.land_area,
+                state=farmer.state,
+                district=farmer.district,
+                mandal=farmer.mandal,
+                village=farmer.village,
+                phone_number=farmer.user.phone,
+                status=status,
+                created_at=created_date
+            )
+            db.add(crop_reg)
+            db.commit()
+            db.refresh(crop_reg)
+            
+            if status in ["Images Uploaded", "AI Reviewed", "Sample Requested", "Approved", "Slot Booked", "Procured", "Payment Completed"]:
+                center_gps = next((c for c in centre_objects if c.district == farmer.district), centre_objects[0])
+                
+                img_types = ["full_produce", "close_up", "storage_view"]
+                for img_type in img_types:
+                    img_url = f"/uploads/{reg_id}_{img_type}.jpg"
+                    
+                    db_img = models.ProduceImage(
+                        registration_id=crop_reg.id,
+                        image_url=img_url,
+                        image_type=img_type,
+                        gps_latitude=center_gps.latitude + random.uniform(-0.02, 0.02),
+                        gps_longitude=center_gps.longitude + random.uniform(-0.02, 0.02),
+                        gps_location_name=f"{farmer.village}, {farmer.mandal} Mandal",
+                        device_info="Motorola Moto G84 5G (Android 14)",
+                        timestamp=created_date + datetime.timedelta(hours=2)
+                    )
+                    db.add(db_img)
+                db.commit()
+
+            if status in ["AI Reviewed", "Sample Requested", "Approved", "Slot Booked", "Procured", "Payment Completed"]:
+                ai_data = ai.analyze_crop_image(b"", crop)
+                
+                db_ai = models.AIAssessment(
+                    registration_id=crop_reg.id,
+                    crop_name=crop,
+                    confidence=ai_data["confidence"],
+                    visual_quality=ai_data["visual_quality"],
+                    grain_uniformity=ai_data["grain_uniformity"],
+                    foreign_material=ai_data["foreign_material"],
+                    estimated_moisture=ai_data["estimated_moisture"],
+                    score=ai_data["score"],
+                    recommendation=ai_data["recommendation"],
+                    created_at=created_date + datetime.timedelta(hours=3)
+                )
+                db.add(db_ai)
+                db.commit()
+
+            if status in ["Approved", "Slot Booked", "Procured", "Payment Completed"]:
+                officer = random.choice(officer_objects)
+                moisture = round(random.uniform(11.0, 14.5), 1)
+                foreign = round(random.uniform(0.5, 2.0), 1)
+                g_quality = "A Grade" if moisture < 13.0 and foreign < 1.2 else "Common"
+                
+                db_sv = models.SampleVerification(
+                    registration_id=crop_reg.id,
+                    officer_id=officer.id,
+                    moisture=moisture,
+                    foreign_matter=foreign,
+                    grain_quality=g_quality,
+                    remarks="Quality matches MSP Grade standards. Moisture levels are ideal.",
+                    status="Approved",
+                    created_at=created_date + datetime.timedelta(days=2)
+                )
+                db.add(db_sv)
+                db.commit()
+
+            if status in ["Slot Booked", "Procured", "Payment Completed"]:
+                proc_id = f"F2G-PR-2026-{5001 + i}"
+                centre_gps = next((c for c in centre_objects if c.district == farmer.district), centre_objects[0])
+                
+                msp_rate = next((m.msp_rate for m in db.query(models.MSPRate).all() if m.crop_name == crop), 2183.0)
+                
+                proc_status = "Completed" if status in ["Procured", "Payment Completed"] else "Booked"
+                actual_qty = qty if proc_status == "Completed" else 0.0
+                accepted_qty = round(actual_qty * random.uniform(0.97, 1.0), 1)
+                total_amt = accepted_qty * msp_rate
+                
+                slot_date = (datetime.date.today() + datetime.timedelta(days=random.randint(-1, 5))).strftime("%Y-%m-%d")
+                slot_time = random.choice(["10:00 AM", "12:00 PM", "2:00 PM", "4:00 PM"])
+                
+                db_proc = models.Procurement(
+                    procurement_number=proc_id,
+                    registration_id=crop_reg.id,
+                    officer_id=random.choice(officer_objects).id,
+                    centre_id=centre_gps.id,
+                    declared_quantity=qty,
+                    actual_quantity=actual_qty,
+                    accepted_quantity=accepted_qty,
+                    msp_rate=msp_rate,
+                    total_amount=total_amt,
+                    slot_date=slot_date,
+                    slot_time=slot_time,
+                    status=proc_status,
+                    digital_receipt_url=f"/api/procurements/{i+1}/receipt" if proc_status == "Completed" else None,
+                    created_at=created_date + datetime.timedelta(days=4)
+                )
+                db.add(db_proc)
+                db.commit()
+                db.refresh(db_proc)
+                
+                pay_status = "Completed" if status == "Payment Completed" else "Initiated"
+                ref = f"TXN-{random.randint(1000000000, 9999999999)}"
+                
+                db_pay = models.Payment(
+                    procurement_id=db_proc.id,
+                    farmer_id=farmer.id,
+                    amount=total_amt if proc_status == "Completed" else (qty * msp_rate),
+                    status=pay_status,
+                    transaction_reference=ref if proc_status == "Completed" else None,
+                    payment_date=(created_date + datetime.timedelta(days=5)) if pay_status == "Completed" else None,
+                    expected_date=(datetime.datetime.utcnow() + datetime.timedelta(days=3))
+                )
+                db.add(db_pay)
+                db.commit()
+
+            # Notifications
+            add_notification(
+                db, 
+                farmer.user_id, 
+                "Registration Logged", 
+                f"Your pre-harvest registration {reg_id} was successfully loaded into the F2G database.", 
+                "general"
+            )
+            
+            if status == "Payment Completed":
+                add_notification(
+                    db,
+                    farmer.user_id,
+                    "Payment Disbursed",
+                    f"Procurement payout of Rs. {total_amt:.2f} has been credited to your Aadhaar-linked Bank A/c. Reference: {ref}.",
+                    "payment"
+                )
+
+        print("[OK] Seeded 50 registrations, AI profiles, slot entries, weigh-ins, and payments.")
+        print("Database Seed completed successfully! All records verified.")
+
+    except Exception as e:
+        print(f"Error seeding database: {e}")
+        db.rollback()
+    finally:
+        db.close()
+
+if __name__ == "__main__":
+    seed_data()
