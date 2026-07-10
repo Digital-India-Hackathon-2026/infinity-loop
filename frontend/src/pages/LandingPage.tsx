@@ -2,10 +2,10 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '../contexts/LanguageContext';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  Sprout, Award, ShieldCheck, ChevronDown, 
-  MapPin, Languages, ArrowRight, 
-  HelpCircle, UserCheck, Smartphone, CheckCircle, Quote 
+import {
+  Sprout, Award, ShieldCheck, ChevronDown,
+  MapPin, Languages, ArrowRight,
+  HelpCircle, UserCheck, Smartphone, CheckCircle, Quote
 } from 'lucide-react';
 
 const LandingPage: React.FC = () => {
@@ -14,10 +14,10 @@ const LandingPage: React.FC = () => {
   const [activeFaq, setActiveFaq] = useState<number | null>(null);
 
   const stats = [
-    { value: '1.2M+', label: t('farmers_registered') },
-    { value: '45.2M Qtl', label: t('procured_qty') },
-    { value: '₹9,840 Cr', label: t('msp_paid') },
-    { value: '98.4%', label: 'AI Accuracy Rating' }
+    { value: '1000+', label: t('farmers_registered') },
+    { value: '42M Qtl', label: t('procured_qty') },
+    { value: '₹9,84 Cr', label: t('msp_paid') },
+    { value: '98.6%', label: 'AI Accuracy Rating' }
   ];
 
   const benefits = [
@@ -162,7 +162,7 @@ const LandingPage: React.FC = () => {
               >
                 <div className="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 px-3 py-1 text-xs font-bold text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-500/20 mb-6">
                   <ShieldCheck className="h-4 w-4" />
-                  <span>Aadhaar-Linked Direct Payouts</span>
+                  <span>AgriTech</span>
                 </div>
                 <h2 className="text-4xl font-extrabold tracking-tight text-slate-900 dark:text-white font-sans sm:text-5xl lg:text-6xl leading-[1.1]">
                   {t('hero_title')}
@@ -323,7 +323,7 @@ const LandingPage: React.FC = () => {
           <h3 className="text-center text-3xl font-bold text-slate-900 dark:text-white mb-16">
             Voices of Procurement (Demo Feed)
           </h3>
-          
+
           <div className="grid gap-8 md:grid-cols-3">
             {testimonials.map((t, idx) => (
               <div key={idx} className="bg-white/80 dark:bg-slate-900/80 border border-slate-200/60 dark:border-slate-800 p-6 rounded-2xl shadow-md relative hover:shadow-lg transition-all flex flex-col justify-between">
@@ -358,8 +358,8 @@ const LandingPage: React.FC = () => {
 
           <div className="space-y-4">
             {faqs.map((faq, idx) => (
-              <div 
-                key={idx} 
+              <div
+                key={idx}
                 className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200/60 dark:border-slate-800 overflow-hidden shadow-sm hover:shadow-md transition-shadow"
               >
                 <button
@@ -402,7 +402,7 @@ const LandingPage: React.FC = () => {
               Farmer2Gov is a Digital Public Infrastructure (DPI) pilot coordinating agricultural pre-harvest logistics with secure direct procurement systems.
             </p>
           </div>
-          
+
           <div>
             <h6 className="text-white font-bold text-xs uppercase tracking-wider mb-4">Related Portals</h6>
             <ul className="space-y-2 text-xs">
@@ -429,7 +429,7 @@ const LandingPage: React.FC = () => {
             </div>
           </div>
         </div>
-        
+
         <div className="mx-auto max-w-7xl border-t border-slate-900 mt-12 pt-8 text-center text-[10px] space-y-1">
           <p>© 2026 Ministry of Agriculture & Farmers Welfare, Government of India. All rights reserved.</p>
           <p className="text-slate-600">Designed and maintained as an open-source digital public good for transparent coordination.</p>

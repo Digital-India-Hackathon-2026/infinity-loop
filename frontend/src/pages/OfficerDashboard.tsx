@@ -206,7 +206,7 @@ const OfficerDashboard: React.FC = () => {
       });
 
       // Fetch images linked to registration
-      const imagesList = await apiFetch(`/api/crops/${req.id}/upload-images`, { method: 'POST', body: new FormData() })
+      const imagesList = await apiFetch(`/api/crops/${req.id}/images`)
         .catch(() => []);
       setImages(imagesList);
 
@@ -433,38 +433,51 @@ const OfficerDashboard: React.FC = () => {
 
         {/* Right Column: Spatial Coordinates Mapping & Inspector details */}
         <div className="md:col-span-4 space-y-6">
-          
-          {/* Spatial Mapping container */}
-          <div className="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 rounded-3xl p-5 shadow-sm space-y-3">
-            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-2">
-              <MapPin className="h-4.5 w-4.5 text-emerald-600" />
-              Procurement Centre Geolocation Map
-            </h4>
-            <div ref={mapContainerRef} className="h-60 w-full bg-slate-100 dark:bg-slate-950 rounded-2xl relative overflow-hidden" />
-            <div className="flex gap-4 justify-center text-[10px] text-slate-500 font-semibold pt-1">
-              <span className="flex items-center gap-1">
-                <div className="h-2.5 w-2.5 rounded-full bg-green-600" /> Procurement Centre
-              </span>
-              <span className="flex items-center gap-1">
-                <div className="h-2.5 w-2.5 rounded-full bg-orange-500" /> Farmer Location
-              </span>
-            </div>
-          </div>
-
-          {/* Verification Actions Side Panel */}
-          {selectedReq && (
+          {/* 1. Verification Actions Side Panel (ABOVE THE MAP) */}
+          {selectedReq ? (
             <div className="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 rounded-3xl p-6 shadow-sm space-y-5">
               <div className="flex justify-between items-start border-b pb-3 dark:border-slate-800">
                 <div>
                   <h4 className="text-sm font-bold text-slate-800 dark:text-slate-200">{selectedReq.farmer_name}</h4>
                   <p className="text-[10px] text-slate-400 font-mono">{selectedReq.registration_number}</p>
                 </div>
-                <span className="bg-slate-50 text-[10px] px-2 py-0.5 rounded border">{selectedReq.crop_name}</span>
+                <span className="bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-350 text-[10px] px-2.5 py-0.5 rounded border border-emerald-500/10 font-bold">{selectedReq.crop_name}</span>
+              </div>
+
+              {/* Crop Registration Metadata Fields */}
+              <div className="bg-slate-50 dark:bg-slate-950/40 p-4 rounded-2xl border dark:border-slate-800 space-y-2">
+                <p className="text-[10px] text-slate-400 uppercase font-black tracking-wider border-b pb-1.5 mb-2">Crop Details Summary</p>
+                <div className="grid grid-cols-2 gap-3 text-[11px] font-semibold text-slate-650 dark:text-slate-400">
+                  <div>
+                    <span className="text-[9px] text-slate-400 block uppercase font-bold">Qty (Quintals)</span>
+                    <span className="text-slate-800 dark:text-slate-200 font-extrabold">{selectedReq.expected_quantity || selectedReq.quantity} Qtl</span>
+                  </div>
+                  <div>
+                    <span className="text-[9px] text-slate-400 block uppercase font-bold">Acreage</span>
+                    <span className="text-slate-800 dark:text-slate-200 font-extrabold">{selectedReq.land_area} Ac</span>
+                  </div>
+                  <div>
+                    <span className="text-[9px] text-slate-400 block uppercase font-bold">Harvest Month</span>
+                    <span className="text-slate-800 dark:text-slate-200 font-extrabold">{selectedReq.expected_harvest_month}</span>
+                  </div>
+                  <div>
+                    <span className="text-[9px] text-slate-400 block uppercase font-bold">Status</span>
+                    <span className="text-slate-850 dark:text-slate-150 font-extrabold">{selectedReq.status}</span>
+                  </div>
+                  <div className="col-span-2 border-t pt-2 mt-1">
+                    <span className="text-[9px] text-slate-400 block uppercase font-bold">Farmer Phone</span>
+                    <span className="text-slate-850 dark:text-slate-150 font-extrabold">{selectedReq.phone_number || 'N/A'}</span>
+                  </div>
+                  <div className="col-span-2">
+                    <span className="text-[9px] text-slate-400 block uppercase font-bold">Mandi Coordinates</span>
+                    <span className="text-slate-850 dark:text-slate-150 font-extrabold">{selectedReq.village}, {selectedReq.mandal}, {selectedReq.district}</span>
+                  </div>
+                </div>
               </div>
 
               {/* Produce image check boxes */}
               <div className="space-y-3">
-                <p className="text-[10px] text-slate-400 uppercase font-bold">Close-up Produce Check</p>
+                <p className="text-[10px] text-slate-400 uppercase font-black tracking-wider">Close-up Produce Check</p>
                 {images.length > 0 ? (
                   (() => {
                     const img = images.find(i => i.image_type === 'close_up') || images[0];
@@ -486,7 +499,7 @@ const OfficerDashboard: React.FC = () => {
                           <p><span className="text-slate-400 font-bold uppercase tracking-wider text-[8px] mr-2">Source:</span> <span className="font-bold text-slate-700 dark:text-slate-300">{img.image_source || 'Live Camera'}</span></p>
                           <p><span className="text-slate-400 font-bold uppercase tracking-wider text-[8px] mr-2">Location:</span> <span className="font-bold text-slate-700 dark:text-slate-300">{img.gps_location_name || 'Agriculture Mandi'}</span></p>
                           <p><span className="text-slate-400 font-bold uppercase tracking-wider text-[8px] mr-2">GPS Coordinates:</span> <span className="font-bold text-emerald-600">{img.gps_latitude?.toFixed(4) || '17.9784'}, {img.gps_longitude?.toFixed(4) || '79.5941'}</span></p>
-                          <p><span className="text-slate-400 font-bold uppercase tracking-wider text-[8px] mr-2">Timestamp:</span> <span className="font-bold text-slate-700 dark:text-slate-350">{img.upload_time || (img.timestamp ? new Date(img.timestamp).toLocaleString() : 'N/A')}</span></p>
+                          <p><span className="text-slate-400 font-bold uppercase tracking-wider text-[8px] mr-2">Timestamp:</span> <span className="font-bold text-slate-700 dark:text-slate-355">{img.upload_time || (img.timestamp ? new Date(img.timestamp).toLocaleString() : 'N/A')}</span></p>
                         </div>
                       </div>
                     );
@@ -513,7 +526,7 @@ const OfficerDashboard: React.FC = () => {
                 {['Images Uploaded', 'AI Reviewed', 'Registered', 'Sample Requested'].includes(selectedReq.status) && (
                   <button
                     onClick={() => setInspectModalOpen(true)}
-                    className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 rounded-xl text-xs uppercase tracking-wider shadow"
+                    className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 rounded-xl text-xs uppercase tracking-wider shadow cursor-pointer transition-all"
                   >
                     Inspect Crop Sample
                   </button>
@@ -523,14 +536,35 @@ const OfficerDashboard: React.FC = () => {
                 {['Slot Booked', 'Approved', 'Sample Verified'].includes(selectedReq.status) && (
                   <button
                     onClick={() => setProcureModalOpen(true)}
-                    className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 rounded-xl text-xs uppercase tracking-wider shadow"
+                    className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 rounded-xl text-xs uppercase tracking-wider shadow cursor-pointer transition-all"
                   >
                     Perform Weigh-In & Procure
                   </button>
                 )}
               </div>
             </div>
+          ) : (
+            <div className="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 rounded-3xl p-8 shadow-sm text-center text-slate-405 font-bold text-xs py-10 leading-relaxed no-print">
+              Select a farmer registration from the queue to view crop details & perform inspections.
+            </div>
           )}
+
+          {/* 2. Geolocation Map Container (BELOW THE IMAGE & DETAILS) */}
+          <div className="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 rounded-3xl p-5 shadow-sm space-y-3">
+            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-2">
+              <MapPin className="h-4.5 w-4.5 text-emerald-600" />
+              Procurement Centre Geolocation Map
+            </h4>
+            <div ref={mapContainerRef} className="h-60 w-full bg-slate-100 dark:bg-slate-950 rounded-2xl relative overflow-hidden" />
+            <div className="flex gap-4 justify-center text-[10px] text-slate-500 font-semibold pt-1">
+              <span className="flex items-center gap-1">
+                <div className="h-2.5 w-2.5 rounded-full bg-green-600" /> Procurement Centre
+              </span>
+              <span className="flex items-center gap-1">
+                <div className="h-2.5 w-2.5 rounded-full bg-orange-500" /> Farmer Location
+              </span>
+            </div>
+          </div>
         </div>
       </main>
 

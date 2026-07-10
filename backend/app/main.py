@@ -376,6 +376,11 @@ def upload_produce_images(
     db.refresh(prod_image)
     return db.query(models.ProduceImage).filter(models.ProduceImage.registration_id == id).all()
 
+@app.get("/api/crops/{id}/images", response_model=List[schemas.ProduceImageResponse])
+def get_crop_images(id: int, current_user: models.User = Depends(auth.get_current_user), db: Session = Depends(get_db)):
+    """Retrieve all uploaded produce images for a crop registration."""
+    return db.query(models.ProduceImage).filter(models.ProduceImage.registration_id == id).all()
+
 @app.post("/api/crops/{id}/ai-assess", response_model=schemas.AIAssessmentResponse)
 def trigger_ai_assessment(
     id: int, 
