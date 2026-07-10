@@ -80,7 +80,11 @@ const OfficerDashboard: React.FC = () => {
     foreign_matter: '1.0',
     grain_quality: 'A Grade',
     remarks: 'Produce conforms to Grade A standards.',
-    status: 'Approved'
+    status: 'Approved',
+    verification_centre: 'Warangal Main PACS Center',
+    verification_date: '',
+    verification_time: '10:00 AM - 12:00 PM',
+    sample_instructions: 'Please bring 2kg of crop sample in a sealed plastic bag for lab chemical verification.'
   });
 
   // Weigh-in Form States
@@ -238,7 +242,11 @@ const OfficerDashboard: React.FC = () => {
           foreign_matter: parseFloat(inspectData.foreign_matter),
           grain_quality: inspectData.grain_quality,
           remarks: inspectData.remarks,
-          status: inspectData.status
+          status: inspectData.status,
+          verification_centre: inspectData.status === 'Need Reinspection' ? inspectData.verification_centre : null,
+          verification_date: inspectData.status === 'Need Reinspection' ? inspectData.verification_date : null,
+          verification_time: inspectData.status === 'Need Reinspection' ? inspectData.verification_time : null,
+          sample_instructions: inspectData.status === 'Need Reinspection' ? inspectData.sample_instructions : null
         })
       });
       setInspectModalOpen(false);
@@ -455,19 +463,34 @@ const OfficerDashboard: React.FC = () => {
               </div>
 
               {/* Produce image check boxes */}
-              <div className="space-y-2">
+              <div className="space-y-3">
                 <p className="text-[10px] text-slate-400 uppercase font-bold">Close-up Produce Check</p>
                 {images.length > 0 ? (
-                  <div className="h-28 w-full bg-slate-950 border rounded-xl overflow-hidden flex items-center justify-center relative">
-                    <img 
-                      src={`http://localhost:8000${images.find(img => img.image_type === 'close_up')?.image_url || images[0].image_url}`} 
-                      alt="Crop Close-up"
-                      className="h-full w-full object-cover" 
-                    />
-                    <div className="absolute top-2 left-2 bg-slate-950/80 px-2 py-0.5 rounded text-[9px] font-mono text-emerald-400 border border-emerald-500/20">
-                      GPS VERIFIED
-                    </div>
-                  </div>
+                  (() => {
+                    const img = images.find(i => i.image_type === 'close_up') || images[0];
+                    return (
+                      <div className="space-y-2">
+                        <div className="h-40 w-full bg-slate-950 border rounded-xl overflow-hidden flex items-center justify-center relative shadow-sm">
+                          <img 
+                            src={`http://localhost:8000${img.image_url}`} 
+                            alt="Crop Close-up"
+                            className="h-full w-full object-cover" 
+                          />
+                          <div className="absolute top-2 left-2 bg-black/75 px-2 py-0.5 rounded text-[8px] font-mono text-emerald-400 border border-emerald-500/20 uppercase font-bold">
+                            {img.image_source || 'Camera'} Verification
+                          </div>
+                        </div>
+                        
+                        {/* Image Metadata Labels */}
+                        <div className="bg-slate-50 dark:bg-slate-950/50 p-2.5 rounded-xl text-[10px] space-y-1 font-mono border dark:border-slate-800">
+                          <p><span className="text-slate-400 font-bold uppercase tracking-wider text-[8px] mr-2">Source:</span> <span className="font-bold text-slate-700 dark:text-slate-300">{img.image_source || 'Live Camera'}</span></p>
+                          <p><span className="text-slate-400 font-bold uppercase tracking-wider text-[8px] mr-2">Location:</span> <span className="font-bold text-slate-700 dark:text-slate-300">{img.gps_location_name || 'Agriculture Mandi'}</span></p>
+                          <p><span className="text-slate-400 font-bold uppercase tracking-wider text-[8px] mr-2">GPS Coordinates:</span> <span className="font-bold text-emerald-600">{img.gps_latitude?.toFixed(4) || '17.9784'}, {img.gps_longitude?.toFixed(4) || '79.5941'}</span></p>
+                          <p><span className="text-slate-400 font-bold uppercase tracking-wider text-[8px] mr-2">Timestamp:</span> <span className="font-bold text-slate-700 dark:text-slate-350">{img.upload_time || (img.timestamp ? new Date(img.timestamp).toLocaleString() : 'N/A')}</span></p>
+                        </div>
+                      </div>
+                    );
+                  })()
                 ) : (
                   <div className="h-28 w-full bg-slate-100 dark:bg-slate-950 border rounded-xl flex items-center justify-center text-[10px] text-slate-400">
                     No images uploaded yet.
@@ -574,6 +597,56 @@ const OfficerDashboard: React.FC = () => {
                     <option value="Need Reinspection">Need Reinspection</option>
                   </select>
                 </div>
+
+                 {inspectData.status === 'Need Reinspection' && (
+                  <div className="space-y-3 pt-2 border-t border-slate-100 dark:border-slate-800">
+                    <p className="text-[9px] text-emerald-600 font-extrabold uppercase tracking-wider">Lab Reinspection Scheduling</p>
+                    <div>
+                      <label className="block text-[9px] font-bold uppercase tracking-wider text-slate-400 mb-1">Verification Centre</label>
+                      <input
+                        type="text"
+                        required
+                        value={inspectData.verification_centre}
+                        onChange={(e) => setInspectData(prev => ({ ...prev, verification_centre: e.target.value }))}
+                        className="w-full rounded-xl border p-2 text-xs bg-slate-50 dark:bg-slate-950 focus:outline-none"
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-[9px] font-bold uppercase tracking-wider text-slate-400 mb-1">Appointment Date</label>
+                        <input
+                          type="date"
+                          required
+                          min={new Date().toISOString().split('T')[0]}
+                          value={inspectData.verification_date}
+                          onChange={(e) => setInspectData(prev => ({ ...prev, verification_date: e.target.value }))}
+                          className="w-full rounded-xl border p-2 text-xs bg-slate-50 dark:bg-slate-950 focus:outline-none"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[9px] font-bold uppercase tracking-wider text-slate-400 mb-1">Time Slot</label>
+                        <select
+                          value={inspectData.verification_time}
+                          onChange={(e) => setInspectData(prev => ({ ...prev, verification_time: e.target.value }))}
+                          className="w-full rounded-xl border p-2 text-xs bg-slate-50 dark:bg-slate-950 focus:outline-none"
+                        >
+                          <option value="10:00 AM - 12:00 PM">10:00 AM - 12:00 PM</option>
+                          <option value="12:00 PM - 02:00 PM">12:00 PM - 02:00 PM</option>
+                          <option value="03:00 PM - 05:00 PM">03:00 PM - 05:00 PM</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-[9px] font-bold uppercase tracking-wider text-slate-400 mb-1">Sample Instructions</label>
+                      <textarea
+                        rows={2}
+                        value={inspectData.sample_instructions}
+                        onChange={(e) => setInspectData(prev => ({ ...prev, sample_instructions: e.target.value }))}
+                        className="w-full rounded-xl border p-2 text-xs bg-slate-50 dark:bg-slate-950 focus:outline-none"
+                      />
+                    </div>
+                  </div>
+                )}
 
                 <div>
                   <label className="block text-[9px] font-bold uppercase tracking-wider text-slate-400 mb-1">Inspection Remarks</label>

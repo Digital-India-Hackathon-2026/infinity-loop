@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Sprout, FileText, TrendingUp, Landmark, ChevronRight, Bell, Languages, 
   LogOut, Search, Camera, Calendar, Clock, AlertTriangle, 
-  CheckCircle, ArrowLeft, RefreshCw, X, Mic, AlertCircle, ShoppingBag, MapPin
+  CheckCircle, ArrowLeft, RefreshCw, X, Mic, AlertCircle, ShoppingBag, MapPin, Upload
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
@@ -62,36 +62,36 @@ interface ProcurementDetail {
 }
 
 const mspProduceItems = [
-  { name: 'Paddy', category: 'Grains', price: '₹2,183', unit: 'per Quintal', type: 'msp', info: 'Primary kharif cereal. Government guaranteed MSP.', image: '🌾' },
-  { name: 'Wheat', category: 'Grains', price: '₹2,275', unit: 'per Quintal', type: 'msp', info: 'Rabi staple crop. Government guaranteed MSP.', image: '🍞' },
-  { name: 'Maize', category: 'Grains', price: '₹2,090', unit: 'per Quintal', type: 'msp', info: 'Coarse cereal used for feed & food. Government MSP.', image: '🌽' },
-  { name: 'Jowar', category: 'Grains', price: '₹3,180', unit: 'per Quintal', type: 'msp', info: 'Sorghum millet, highly drought resistant. Government MSP.', image: '🌾' },
-  { name: 'Bajra', category: 'Grains', price: '₹2,500', unit: 'per Quintal', type: 'msp', info: 'Pearl millet staple. Government MSP.', image: '🌾' },
-  { name: 'Ragi', category: 'Grains', price: '₹3,846', unit: 'per Quintal', type: 'msp', info: 'Finger millet, high calcium. Government MSP.', image: '🌾' },
-  { name: 'Gram', category: 'Pulses', price: '₹5,440', unit: 'per Quintal', type: 'msp', info: 'Chickpea rabi pulse. Government MSP.', image: '🍲' },
-  { name: 'Tur', category: 'Pulses', price: '₹7,000', unit: 'per Quintal', type: 'msp', info: 'Pigeon pea kharif pulse. Government MSP.', image: '🍲' },
-  { name: 'Moong', category: 'Pulses', price: '₹8,558', unit: 'per Quintal', type: 'msp', info: 'Green gram pulse. Government MSP.', image: '🍲' },
-  { name: 'Urad', category: 'Pulses', price: '₹6,950', unit: 'per Quintal', type: 'msp', info: 'Black gram pulse. Government MSP.', image: '🍲' },
-  { name: 'Groundnut', category: 'Oilseeds', price: '₹6,377', unit: 'per Quintal', type: 'msp', info: 'Peanut oilseed crop. Government MSP.', image: '🥜' },
-  { name: 'Sunflower Seed', category: 'Oilseeds', price: '₹6,760', unit: 'per Quintal', type: 'msp', info: 'High oil yield seed crop. Government MSP.', image: '🌻' },
-  { name: 'Soybean', category: 'Oilseeds', price: '₹4,600', unit: 'per Quintal', type: 'msp', info: 'Yellow soybean oilseed. Government MSP.', image: '🌱' },
-  { name: 'Sesamum', category: 'Oilseeds', price: '₹8,635', unit: 'per Quintal', type: 'msp', info: 'Sesame til crop. Government MSP.', image: '🌱' },
-  { name: 'Cotton', category: 'Other', price: '₹6,620', unit: 'per Quintal', type: 'msp', info: 'Fiber cash crop. Government MSP.', image: '☁️' },
-  { name: 'Tomato', category: 'Vegetables', price: '₹1,800', unit: 'per Quintal', type: 'market', info: 'Daily vegetable produce. Market Price / Demo Data.', image: '🍅' },
-  { name: 'Onion', category: 'Vegetables', price: '₹2,200', unit: 'per Quintal', type: 'market', info: 'Staple kitchen vegetable. Market Price / Demo Data.', image: '🧅' },
-  { name: 'Potato', category: 'Vegetables', price: '₹1,500', unit: 'per Quintal', type: 'market', info: 'Tubers cash crop. Market Price / Demo Data.', image: '🥔' },
-  { name: 'Chilli', category: 'Vegetables', price: '₹19,000', unit: 'per Quintal', type: 'market', info: 'Red spice crop. Market Price / Demo Data.', image: '🌶️' },
-  { name: 'Turmeric', category: 'Other', price: '₹12,500', unit: 'per Quintal', type: 'market', info: 'Spices cash crop. Market Price / Demo Data.', image: '💛' }
+  { name: 'Paddy', nameKey: 'crop_paddy', categoryKey: 'cat_grains', price: '₹2,183', unitKey: 'unit_qtl', type: 'msp', infoKey: 'crop_paddy_info', imageUrl: 'https://images.unsplash.com/photo-1586201375761-83865001e31c?auto=format&fit=crop&q=80&w=400' },
+  { name: 'Wheat', nameKey: 'crop_wheat', categoryKey: 'cat_grains', price: '₹2,275', unitKey: 'unit_qtl', type: 'msp', infoKey: 'crop_wheat_info', imageUrl: 'https://images.unsplash.com/photo-1574323347407-f5e1ad6d020b?auto=format&fit=crop&q=80&w=400' },
+  { name: 'Maize', nameKey: 'crop_maize', categoryKey: 'cat_grains', price: '₹2,090', unitKey: 'unit_qtl', type: 'msp', infoKey: 'crop_maize_info', imageUrl: 'https://images.unsplash.com/photo-1551754625-70c9003507d5?auto=format&fit=crop&q=80&w=400' },
+  { name: 'Jowar', nameKey: 'crop_jowar', categoryKey: 'cat_grains', price: '₹3,180', unitKey: 'unit_qtl', type: 'msp', infoKey: 'crop_jowar_info', imageUrl: 'https://images.unsplash.com/photo-1599599810769-bcde5a160d32?auto=format&fit=crop&q=80&w=400' },
+  { name: 'Bajra', nameKey: 'crop_bajra', categoryKey: 'cat_grains', price: '₹2,500', unitKey: 'unit_qtl', type: 'msp', infoKey: 'crop_bajra_info', imageUrl: 'https://images.unsplash.com/photo-1628155930542-3c7a64e2c833?auto=format&fit=crop&q=80&w=400' },
+  { name: 'Ragi', nameKey: 'crop_ragi', categoryKey: 'cat_grains', price: '₹3,846', unitKey: 'unit_qtl', type: 'msp', infoKey: 'crop_ragi_info', imageUrl: 'https://images.unsplash.com/photo-1509440159596-0249088772ff?auto=format&fit=crop&q=80&w=400' },
+  { name: 'Gram', nameKey: 'crop_gram', categoryKey: 'cat_pulses', price: '₹5,440', unitKey: 'unit_qtl', type: 'msp', infoKey: 'crop_gram_info', imageUrl: 'https://images.unsplash.com/photo-1547058881-aa0edd92aab3?auto=format&fit=crop&q=80&w=400' },
+  { name: 'Tur', nameKey: 'crop_tur', categoryKey: 'cat_pulses', price: '₹7,000', unitKey: 'unit_qtl', type: 'msp', infoKey: 'crop_tur_info', imageUrl: 'https://images.unsplash.com/photo-1608686207856-001b95cf60ca?auto=format&fit=crop&q=80&w=400' },
+  { name: 'Moong', nameKey: 'crop_moong', categoryKey: 'cat_pulses', price: '₹8,558', unitKey: 'unit_qtl', type: 'msp', infoKey: 'crop_moong_info', imageUrl: 'https://images.unsplash.com/photo-1586201375761-83865001e31c?auto=format&fit=crop&q=80&w=400' },
+  { name: 'Urad', nameKey: 'crop_urad', categoryKey: 'cat_pulses', price: '₹6,950', unitKey: 'unit_qtl', type: 'msp', infoKey: 'crop_urad_info', imageUrl: 'https://images.unsplash.com/photo-1608686207856-001b95cf60ca?auto=format&fit=crop&q=80&w=400' },
+  { name: 'Groundnut', nameKey: 'crop_groundnut', categoryKey: 'cat_oilseeds', price: '₹6,377', unitKey: 'unit_qtl', type: 'msp', infoKey: 'crop_groundnut_info', imageUrl: 'https://images.unsplash.com/photo-1568254183919-78a4f43a2877?auto=format&fit=crop&q=80&w=400' },
+  { name: 'Sunflower Seed', nameKey: 'crop_sunflower_seed', categoryKey: 'cat_oilseeds', price: '₹6,760', unitKey: 'unit_qtl', type: 'msp', infoKey: 'crop_sunflower_seed_info', imageUrl: 'https://images.unsplash.com/photo-1597848212624-a19eb35e2651?auto=format&fit=crop&q=80&w=400' },
+  { name: 'Soybean', nameKey: 'crop_soybean', categoryKey: 'cat_oilseeds', price: '₹4,600', unitKey: 'unit_qtl', type: 'msp', infoKey: 'crop_soybean_info', imageUrl: 'https://images.unsplash.com/photo-1589927986089-35812388d1f4?auto=format&fit=crop&q=80&w=400' },
+  { name: 'Sesamum', nameKey: 'crop_sesamum', categoryKey: 'cat_oilseeds', price: '₹8,635', unitKey: 'unit_qtl', type: 'msp', infoKey: 'crop_sesamum_info', imageUrl: 'https://images.unsplash.com/photo-1586201375761-83865001e31c?auto=format&fit=crop&q=80&w=400' },
+  { name: 'Cotton', nameKey: 'crop_cotton', categoryKey: 'cat_commercial', price: '₹6,620', unitKey: 'unit_qtl', type: 'msp', infoKey: 'crop_cotton_info', imageUrl: 'https://images.unsplash.com/photo-1594900010620-330cc7c50a0f?auto=format&fit=crop&q=80&w=400' },
+  { name: 'Tomato', nameKey: 'crop_tomato', categoryKey: 'cat_vegetables', price: '₹1,800', unitKey: 'unit_qtl', type: 'market', infoKey: 'crop_tomato_info', imageUrl: 'https://images.unsplash.com/photo-1595855759920-86582396756a?auto=format&fit=crop&q=80&w=400' },
+  { name: 'Onion', nameKey: 'crop_onion', categoryKey: 'cat_vegetables', price: '₹2,200', unitKey: 'unit_qtl', type: 'market', infoKey: 'crop_onion_info', imageUrl: 'https://images.unsplash.com/photo-1508747703725-719ae2cf29d4?auto=format&fit=crop&q=80&w=400' },
+  { name: 'Potato', nameKey: 'crop_potato', categoryKey: 'cat_vegetables', price: '₹1,500', unitKey: 'unit_qtl', type: 'market', infoKey: 'crop_potato_info', imageUrl: 'https://images.unsplash.com/photo-1518977676601-b53f82aba655?auto=format&fit=crop&q=80&w=400' },
+  { name: 'Chilli', nameKey: 'crop_chilli', categoryKey: 'cat_vegetables', price: '₹19,000', unitKey: 'unit_qtl', type: 'market', infoKey: 'crop_chilli_info', imageUrl: 'https://images.unsplash.com/photo-1588166524941-3bf61a9c41db?auto=format&fit=crop&q=80&w=400' },
+  { name: 'Turmeric', nameKey: 'crop_turmeric', categoryKey: 'cat_commercial', price: '₹12,500', unitKey: 'unit_qtl', type: 'market', infoKey: 'crop_turmeric_info', imageUrl: 'https://images.unsplash.com/photo-1615485290382-441e4d049cb5?auto=format&fit=crop&q=80&w=400' }
 ];
 
 const FarmerDashboard: React.FC = () => {
   const { logout, apiFetch, name } = useAuth();
   const { t, language, setLanguage } = useLanguage();
 
-  // Navigation / Tab states
-  const [activeTab, setActiveTab] = useState<'overview' | 'register' | 'register-produce' | 'msp' | 'procurement'>('overview');
+
   
-  // Dashboard Data states
+  // Navigation / Tab states
+  const [activeTab, setActiveTab] = useState<'overview' | 'register' | 'register-produce' | 'msp' | 'procurement' | 'booking'>('overview');
   const [registrations, setRegistrations] = useState<Registration[]>([]);
   const [selectedReg, setSelectedReg] = useState<Registration | null>(null);
   const [notifications, setNotifications] = useState<any[]>([]);
@@ -152,7 +152,10 @@ const FarmerDashboard: React.FC = () => {
   // Slot Booking states
   const [bookingOpen, setBookingOpen] = useState(false);
   const [slotDate, setSlotDate] = useState('');
-  const [slotTime, setSlotTime] = useState('10:00 AM');
+  const [slotTime, setSlotTime] = useState('09:00 AM - 11:00 AM');
+  const [selectedBookingRegId, setSelectedBookingRegId] = useState('');
+  const [bookedProcurement, setBookedProcurement] = useState<any | null>(null);
+  const [imageSourceOption, setImageSourceOption] = useState<'live' | 'upload'>('live');
 
   // Voice Assistant states
   const [voiceActive, setVoiceActive] = useState(false);
@@ -450,6 +453,42 @@ const FarmerDashboard: React.FC = () => {
     }
   };
 
+  const handleLocalImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !selectedReg) return;
+
+    try {
+      const reader = new FileReader();
+      reader.onloadend = async () => {
+        const imageSrc = reader.result as string;
+        setCapturedImages(prev => ({ ...prev, close_up: imageSrc }));
+
+        const fd = new FormData();
+        fd.append('file', file, `close_up.jpg`);
+        fd.append('image_type', 'close_up');
+        fd.append('gps_latitude', gpsData.lat.toString());
+        fd.append('gps_longitude', gpsData.lng.toString());
+        fd.append('gps_location_name', gpsData.loc);
+        fd.append('device_info', 'Local Upload Browser');
+        fd.append('image_source', 'Local Upload');
+
+        await apiFetch(`/api/crops/${selectedReg.id}/upload-images`, {
+          method: 'POST',
+          body: fd
+        });
+
+        // Trigger updates in registration timeline
+        fetchDashboardData();
+        const list = await apiFetch('/api/crops/my-registrations');
+        const current = list.find((r: any) => r.id === selectedReg.id);
+        if (current) setSelectedReg(current);
+      };
+      reader.readAsDataURL(file);
+    } catch (err: any) {
+      console.error('Failed to upload local image:', err);
+    }
+  };
+
   const randomInRange = (min: number, max: number) => {
     return Math.floor(Math.random() * (max - min + 1) + min);
   };
@@ -498,6 +537,27 @@ const FarmerDashboard: React.FC = () => {
     }
   };
 
+  const handleBookSlotSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedBookingRegId || !slotDate) return;
+    try {
+      const data = await apiFetch(`/api/crops/${selectedBookingRegId}/book-slot`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          slot_date: slotDate,
+          slot_time: slotTime
+        })
+      });
+      setBookedProcurement(data);
+      confetti({ particleCount: 80, spread: 60, origin: { y: 0.7 } });
+      fetchDashboardData();
+    } catch (err: any) {
+      console.error(err);
+      alert(err.message || 'Failed to book slot.');
+    }
+  };
+
   // VOICE ASSISTANT PROCESSOR (FLOATING & MULTILINGUAL)
   const startListening = () => {
     if (recognition) {
@@ -529,6 +589,9 @@ const FarmerDashboard: React.FC = () => {
         setActiveTab('procurement');
         fetchProcurements();
         reply = 'చెల్లింపు మరియు కొనుగోలు ట్రాకింగ్ పేజీని తెరుస్తున్నాను.';
+      } else if (query.includes('బుకింగ్') || query.includes('స్లాట్') || query.includes('అపాయింట్‌మెంట్') || query.includes('బుక్')) {
+        setActiveTab('booking');
+        reply = 'కొనుగోలు స్లాట్ బుకింగ్ పేజీని తెరుస్తున్నాను.';
       } else if (query.includes('డాష్‌బోర్డ్') || query.includes('హోమ్') || query.includes('మొదటి పేజీ')) {
         setActiveTab('overview');
         setSelectedReg(null);
@@ -553,6 +616,9 @@ const FarmerDashboard: React.FC = () => {
         setActiveTab('procurement');
         fetchProcurements();
         reply = 'भुगतान स्थिति और खरीद ट्रैकिंग पृष्ठ खोल रहा हूँ।';
+      } else if (query.includes('बुक') || query.includes('स्लॉट') || query.includes('बुकिंग') || query.includes('अपॉइंटमेंट')) {
+        setActiveTab('booking');
+        reply = 'खरीद स्लॉट बुकिंग पृष्ठ खोल रहा हूँ।';
       } else if (query.includes('डैशबोर्ड') || query.includes('होम') || query.includes('मुख्य पृष्ठ')) {
         setActiveTab('overview');
         setSelectedReg(null);
@@ -578,6 +644,9 @@ const FarmerDashboard: React.FC = () => {
         setActiveTab('procurement');
         fetchProcurements();
         reply = 'Opening procurement and payment tracking page.';
+      } else if (query.includes('book slot') || query.includes('booking') || query.includes('schedule slot') || query.includes('appointment')) {
+        setActiveTab('booking');
+        reply = 'Opening procurement slot booking page.';
       } else if (query.includes('go to dashboard') || query.includes('go home') || query.includes('dashboard')) {
         setActiveTab('overview');
         setSelectedReg(null);
@@ -621,8 +690,19 @@ const FarmerDashboard: React.FC = () => {
 
   // Filter crops dataset
   const filteredMspItems = mspProduceItems.filter(item => {
-    const matchesSearch = item.name.toLowerCase().includes(mspSearchQuery.toLowerCase());
-    const matchesCategory = mspCategoryFilter === 'All' || item.category === mspCategoryFilter;
+    const cropNameTranslated = t(item.nameKey).toLowerCase();
+    const matchesSearch = cropNameTranslated.includes(mspSearchQuery.toLowerCase()) || item.name.toLowerCase().includes(mspSearchQuery.toLowerCase());
+    
+    const catMap: Record<string, string> = {
+      'All': 'All',
+      'Grains': 'cat_grains',
+      'Pulses': 'cat_pulses',
+      'Vegetables': 'cat_vegetables',
+      'Oilseeds': 'cat_oilseeds'
+    };
+    
+    const targetCat = catMap[mspCategoryFilter] || 'All';
+    const matchesCategory = targetCat === 'All' || item.categoryKey === targetCat;
     return matchesSearch && matchesCategory;
   });
 
@@ -690,11 +770,12 @@ const FarmerDashboard: React.FC = () => {
         <div className="md:col-span-3 space-y-4">
           <div className="space-y-2">
             {[
-              { id: 'overview', label: 'My Registrations', icon: FileText },
-              { id: 'register', label: 'Register Crop', icon: Sprout },
-              { id: 'register-produce', label: 'Register Produce', icon: ShoppingBag },
-              { id: 'msp', label: t('msp_info'), icon: TrendingUp },
-              { id: 'procurement', label: t('my_procurement'), icon: Landmark }
+              { id: 'overview', label: t('nav_my_registrations'), icon: FileText },
+              { id: 'register', label: t('nav_register_crop'), icon: Sprout },
+              { id: 'register-produce', label: t('nav_register_produce'), icon: ShoppingBag },
+              { id: 'msp', label: t('nav_msp_info'), icon: TrendingUp },
+              { id: 'booking', label: t('slot_booking'), icon: Calendar },
+              { id: 'procurement', label: t('nav_my_procurement'), icon: Landmark }
             ].map((tab) => (
               <button
                 key={tab.id}
@@ -717,6 +798,56 @@ const FarmerDashboard: React.FC = () => {
               </button>
             ))}
           </div>
+
+          {/* Sidebar Voice Assistant Card */}
+          <div className="bg-white border border-slate-200 rounded-3xl p-5 shadow-sm space-y-4 no-print">
+            <div className="flex items-center gap-3">
+              <div className="h-9 w-9 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                <Mic className="h-5 w-5 text-emerald-700" />
+              </div>
+              <div>
+                <h4 className="text-xs font-black text-slate-800 uppercase tracking-wide">{t('voice_assistant')}</h4>
+                <p className="text-[9px] text-slate-450 font-bold uppercase">Multi-lingual Navigation</p>
+              </div>
+            </div>
+            
+            <p className="text-[10px] text-slate-450 leading-relaxed font-semibold">
+              Say commands like: <b>"Register Crop"</b>, <b>"భారత్ మద్దతు ధర"</b>, or <b>"भुगतान स्थिति"</b> to auto-navigate.
+            </p>
+
+            <button
+              type="button"
+              onClick={startListening}
+              className={`w-full py-2.5 rounded-xl border text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-2 ${
+                voiceActive 
+                  ? 'bg-red-500 border-red-400 text-white animate-pulse' 
+                  : 'bg-emerald-600 border-emerald-650 text-white shadow-sm hover:bg-emerald-700'
+              }`}
+            >
+              <Mic className="h-4 w-4" />
+              {voiceActive ? t('voice_btn_listening') : t('voice_btn_start')}
+            </button>
+
+            {voiceText && (
+              <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-100 text-xs">
+                <p className="text-[9px] uppercase font-bold text-slate-400">Heard:</p>
+                <p className="font-bold text-slate-800 mt-0.5">"{voiceText}"</p>
+              </div>
+            )}
+
+            {voiceReply && !voiceActive && (
+              <div className="bg-emerald-550/10 text-emerald-850 border border-emerald-100 p-3 rounded-xl space-y-1.5 text-xs">
+                <p className="text-[9px] uppercase font-bold text-emerald-600">Response:</p>
+                <p className="font-bold leading-relaxed text-slate-850">{voiceReply}</p>
+                <button 
+                  onClick={() => setVoiceReply('')} 
+                  className="text-[9px] text-slate-450 hover:text-slate-700 hover:underline font-bold mt-1 block"
+                >
+                  Dismiss
+                </button>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Right column main content area */}
@@ -733,7 +864,7 @@ const FarmerDashboard: React.FC = () => {
                 {!selectedReg ? (
                   <div className="space-y-6">
                     {/* Quick Action Grid */}
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                    <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
                       <button
                         onClick={() => setActiveTab('register')}
                         className="bg-white border border-emerald-100 hover:border-emerald-300 p-5 rounded-2xl shadow-sm text-left transition-all hover:scale-[1.02] flex flex-col justify-between h-28 group cursor-pointer"
@@ -741,7 +872,7 @@ const FarmerDashboard: React.FC = () => {
                         <div className="h-9 w-9 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center group-hover:bg-emerald-600 group-hover:text-white transition-all">
                           <Sprout className="h-5 w-5" />
                         </div>
-                        <span className="text-xs font-bold text-slate-800">Register Crop</span>
+                        <span className="text-xs font-bold text-slate-800">{t('nav_register_crop')}</span>
                       </button>
 
                       <button
@@ -751,7 +882,7 @@ const FarmerDashboard: React.FC = () => {
                         <div className="h-9 w-9 rounded-xl bg-yellow-50 text-yellow-600 flex items-center justify-center group-hover:bg-yellow-600 group-hover:text-white transition-all">
                           <ShoppingBag className="h-5 w-5" />
                         </div>
-                        <span className="text-xs font-bold text-slate-800">Register Produce</span>
+                        <span className="text-xs font-bold text-slate-800">{t('nav_register_produce')}</span>
                       </button>
 
                       <button
@@ -765,6 +896,16 @@ const FarmerDashboard: React.FC = () => {
                       </button>
 
                       <button
+                        onClick={() => setActiveTab('booking')}
+                        className="bg-white border border-purple-100 hover:border-purple-300 p-5 rounded-2xl shadow-sm text-left transition-all hover:scale-[1.02] flex flex-col justify-between h-28 group cursor-pointer"
+                      >
+                        <div className="h-9 w-9 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center group-hover:bg-purple-600 group-hover:text-white transition-all">
+                          <Calendar className="h-5 w-5" />
+                        </div>
+                        <span className="text-xs font-bold text-slate-800">{t('slot_booking')}</span>
+                      </button>
+
+                      <button
                         onClick={() => { setActiveTab('procurement'); fetchProcurements(); }}
                         className="bg-white border border-blue-100 hover:border-blue-300 p-5 rounded-2xl shadow-sm text-left transition-all hover:scale-[1.02] flex flex-col justify-between h-28 group cursor-pointer"
                       >
@@ -775,42 +916,22 @@ const FarmerDashboard: React.FC = () => {
                       </button>
                     </div>
 
-                    {/* Weather & Govt Bulletins Grid */}
-                    <div className="grid gap-6 md:grid-cols-2">
-                      {/* Weather widget */}
-                      <div className="bg-gradient-to-br from-emerald-600 to-emerald-800 p-6 rounded-3xl text-white shadow-md flex flex-col justify-between relative overflow-hidden group">
-                        <div className="absolute right-0 bottom-0 bg-white/5 h-24 w-24 rounded-full blur-xl pointer-events-none" />
-                        <div className="flex justify-between items-start">
-                          <div>
-                            <h4 className="text-xs uppercase font-extrabold tracking-wider text-emerald-100">{t('weather_info')}</h4>
-                            <p className="text-2xl font-extrabold mt-1">32°C • Sunny</p>
-                          </div>
-                          <span className="text-4xl">☀️</span>
-                        </div>
-                        <div className="mt-6 pt-4 border-t border-white/15 text-[11px] leading-relaxed text-emerald-50 font-medium">
-                          <p><b>Agricultural Advisory:</b> Low humidity (38%) is ideal for harvested Paddy drying. Keep your harvest covered in case of brief light rains expected next Tuesday.</p>
-                        </div>
-                      </div>
-
-                      {/* Govt bulletins */}
-                      <div className="bg-white border border-slate-200 p-6 rounded-3xl shadow-sm flex flex-col justify-between">
-                        <div>
-                          <h4 className="text-xs uppercase font-extrabold tracking-wider text-slate-500 flex items-center gap-2">
-                            <span className="h-2 w-2 bg-emerald-550 rounded-full animate-pulse" />
-                            {t('gov_updates')}
-                          </h4>
-                          <ul className="mt-4 space-y-3.5 text-xs leading-relaxed font-semibold text-slate-650">
-                            <li className="flex items-start gap-2">
-                              <span className="text-emerald-600 font-extrabold shrink-0">•</span>
-                              <p>Subsidized seeds distribution starting July 20 at local PACS centres.</p>
-                            </li>
-                            <li className="flex items-start gap-2">
-                              <span className="text-emerald-600 font-extrabold shrink-0">•</span>
-                              <p>MSP procurement centers in Warangal now accept direct harvested registrations.</p>
-                            </li>
-                          </ul>
-                        </div>
-                      </div>
+                    {/* Govt Bulletins Panel */}
+                    <div className="bg-white border border-slate-200 p-6 rounded-3xl shadow-sm">
+                      <h4 className="text-xs uppercase font-extrabold tracking-wider text-slate-500 flex items-center gap-2">
+                        <span className="h-2 w-2 bg-emerald-550 rounded-full animate-pulse" />
+                        {t('gov_bulletins')}
+                      </h4>
+                      <ul className="mt-4 space-y-3.5 text-xs leading-relaxed font-semibold text-slate-650">
+                        <li className="flex items-start gap-2">
+                          <span className="text-emerald-650 font-extrabold shrink-0">•</span>
+                          <p>{t('bulletin_1')}</p>
+                        </li>
+                        <li className="flex items-start gap-2">
+                          <span className="text-emerald-650 font-extrabold shrink-0">•</span>
+                          <p>{t('bulletin_2')}</p>
+                        </li>
+                      </ul>
                     </div>
 
                     {/* Active registrations listing */}
@@ -889,7 +1010,7 @@ const FarmerDashboard: React.FC = () => {
                     <div className="grid gap-6 md:grid-cols-12">
                       <div className="md:col-span-8 space-y-6">
                         {/* Summary Card */}
-                        <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm">
+                        <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm relative overflow-hidden">
                           <div className="flex justify-between items-start border-b pb-4 mb-4">
                             <div>
                               <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
@@ -900,9 +1021,19 @@ const FarmerDashboard: React.FC = () => {
                               <h3 className="text-base font-extrabold text-slate-900 mt-2">{selectedReg.crop_name} ({selectedReg.expected_quantity} {selectedReg.quantity_unit || 'Qtl'})</h3>
                               <p className="text-xs text-slate-450 font-mono mt-0.5">{selectedReg.registration_number}</p>
                             </div>
-                            <span className="bg-slate-100 text-slate-650 text-xs font-bold px-3 py-1 rounded-lg">
-                              Status: {selectedReg.status}
-                            </span>
+                            <div className="flex flex-col items-end gap-2">
+                              <span className="bg-slate-100 text-slate-650 text-xs font-bold px-3 py-1 rounded-lg">
+                                Status: {selectedReg.status}
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => window.print()}
+                                className="text-[10px] bg-emerald-50 hover:bg-emerald-100 text-emerald-700 px-2.5 py-1 rounded-lg border border-emerald-500/10 font-bold cursor-pointer flex items-center gap-1 shadow-sm transition-all no-print"
+                              >
+                                <FileText className="h-3 w-3" />
+                                Print Receipt
+                              </button>
+                            </div>
                           </div>
 
                           <div className="grid grid-cols-2 gap-4 text-xs">
@@ -939,42 +1070,110 @@ const FarmerDashboard: React.FC = () => {
                           <div>
                             <h4 className="text-sm font-extrabold text-slate-900 flex items-center gap-2">
                               <Camera className="h-5 w-5 text-emerald-600" />
-                              Visual Assessment Quality Checks
+                              {t('visual_assessment_title')}
                             </h4>
-                            <p className="text-xs text-slate-400 mt-1">Upload required photos for preliminary AI moisture estimation and crop quality grade assessment.</p>
+                            <p className="text-xs text-slate-400 mt-1">{t('visual_assessment_desc')}</p>
                           </div>
 
-                          <div className="grid grid-cols-3 gap-3">
-                            {(['full_produce', 'close_up', 'storage_view'] as const).map((type) => {
-                              const hasImg = capturedImages[type] || selectedReg.images?.find(i => i.image_type === type);
-                              const imgObj = selectedReg.images?.find(i => i.image_type === type);
-                              const src = imgObj ? `http://localhost:8000${imgObj.image_url}` : capturedImages[type];
+                          {/* Image Source Selection Toggle */}
+                          <div className="flex bg-slate-100 p-1.5 rounded-xl gap-1">
+                            <button
+                              type="button"
+                              onClick={() => setImageSourceOption('live')}
+                              className={`flex-1 text-center py-2 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+                                imageSourceOption === 'live' ? 'bg-white text-emerald-700 shadow-sm' : 'text-slate-500 hover:text-slate-800'
+                              }`}
+                            >
+                              {t('capture_photo_option')}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setImageSourceOption('upload')}
+                              className={`flex-1 text-center py-2 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+                                imageSourceOption === 'upload' ? 'bg-white text-emerald-700 shadow-sm' : 'text-slate-500 hover:text-slate-800'
+                              }`}
+                            >
+                              {t('upload_photo_option')}
+                            </button>
+                          </div>
 
-                              return (
-                                <button
-                                  key={type}
-                                  type="button"
-                                  onClick={() => openCamera(type)}
-                                  className={`relative h-28 border rounded-2xl flex flex-col items-center justify-center gap-1.5 transition-all text-center p-3 cursor-pointer ${
-                                    hasImg ? 'border-emerald-500 bg-emerald-50/10' : 'border-dashed border-slate-300 hover:bg-slate-50'
-                                  }`}
-                                >
-                                  {hasImg ? (
-                                    <>
-                                      <img src={src} className="absolute inset-0 h-full w-full object-cover rounded-2xl opacity-40" />
-                                      <CheckCircle className="h-5 w-5 text-emerald-600 relative z-10" />
-                                      <span className="text-[9px] font-extrabold uppercase text-emerald-700 relative z-10">{type.replace('_', ' ')}</span>
-                                    </>
-                                  ) : (
-                                    <>
-                                      <Camera className="h-5 w-5 text-slate-400" />
-                                      <span className="text-[9px] font-bold text-slate-500 leading-tight uppercase">{type.replace('_', ' ')}</span>
-                                      <span className="text-[7px] text-slate-450 uppercase tracking-widest font-extrabold bg-slate-100 px-1.5 py-0.5 rounded mt-0.5">Capture</span>
-                                    </>
-                                  )}
-                                </button>
-                              );
-                            })}
+                          {/* Single Image Area */}
+                          <div className="border border-dashed border-slate-200 rounded-2xl p-4 flex flex-col items-center justify-center min-h-[220px] relative overflow-hidden bg-slate-50/30">
+                            {capturedImages['close_up'] || selectedReg.images?.find(i => i.image_type === 'close_up') ? (
+                              (() => {
+                                const imgObj = selectedReg.images?.find(i => i.image_type === 'close_up');
+                                const src = imgObj ? `http://localhost:8000${imgObj.image_url}` : capturedImages['close_up'];
+                                const latitude = imgObj ? imgObj.gps_latitude : gpsData.lat;
+                                const longitude = imgObj ? imgObj.gps_longitude : gpsData.lng;
+                                const locationName = imgObj ? imgObj.gps_location_name : gpsData.loc;
+                                const timestamp = imgObj ? imgObj.created_at : new Date().toISOString();
+                                const source = imgObj ? (imgObj.image_source || 'Live Capture') : (imageSourceOption === 'live' ? 'Live Capture' : 'Local Upload');
+
+                                return (
+                                  <div className="w-full space-y-4">
+                                    <div className="relative h-40 w-full rounded-xl overflow-hidden border border-slate-200/80">
+                                      <img src={src} className="h-full w-full object-cover" alt="Close-up Produce" />
+                                      <div className="absolute top-2 right-2 bg-emerald-600 text-white rounded-full p-1 shadow">
+                                        <CheckCircle className="h-4.5 w-4.5" />
+                                      </div>
+                                      <span className="absolute bottom-2 left-2 bg-black/60 backdrop-blur-sm text-white text-[9px] font-bold px-2 py-0.5 rounded">
+                                        {source}
+                                      </span>
+                                    </div>
+                                    
+                                    <div className="bg-white border border-slate-100 rounded-xl p-3 space-y-2 text-[10px] text-slate-500 font-semibold shadow-sm">
+                                      <p className="flex justify-between items-center">
+                                        <span>{t('image_source_label')}</span>
+                                        <span className="font-extrabold text-slate-800">{source}</span>
+                                      </p>
+                                      <p className="flex justify-between items-center">
+                                        <span>GPS Coordinates:</span>
+                                        <span className="font-mono text-slate-700">{latitude.toFixed(6)}, {longitude.toFixed(6)}</span>
+                                      </p>
+                                      <p className="flex justify-between items-center">
+                                        <span>Location Name:</span>
+                                        <span className="text-slate-700 truncate max-w-[180px]">{locationName}</span>
+                                      </p>
+                                      <p className="flex justify-between items-center">
+                                        <span>Timestamp:</span>
+                                        <span className="text-slate-700">{new Date(timestamp).toLocaleString()}</span>
+                                      </p>
+                                    </div>
+                                  </div>
+                                );
+                              })()
+                            ) : (
+                              <div className="text-center py-6">
+                                {imageSourceOption === 'live' ? (
+                                  <button
+                                    type="button"
+                                    onClick={() => openCamera('close_up')}
+                                    className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-extrabold px-5 py-2.5 rounded-xl shadow-md transition-all inline-flex items-center gap-2 cursor-pointer"
+                                  >
+                                    <Camera className="h-4 w-4" />
+                                    {t('camera_btn')}
+                                  </button>
+                                ) : (
+                                  <>
+                                    <input 
+                                      type="file" 
+                                      accept="image/*" 
+                                      onChange={handleLocalImageUpload} 
+                                      className="hidden" 
+                                      id="local-upload-input" 
+                                    />
+                                    <label 
+                                      htmlFor="local-upload-input"
+                                      className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-extrabold px-5 py-2.5 rounded-xl shadow-md transition-all inline-flex items-center gap-2 cursor-pointer"
+                                    >
+                                      <Upload className="h-4 w-4" />
+                                      {t('select_image_file')}
+                                    </label>
+                                  </>
+                                )}
+                                <p className="text-[10px] text-slate-450 mt-3 font-semibold">Moisture and grain uniformity prediction uses computer vision</p>
+                              </div>
+                            )}
                           </div>
 
                           {/* Assessment button */}
@@ -1593,15 +1792,15 @@ const FarmerDashboard: React.FC = () => {
                     <div>
                       <h3 className="text-base font-extrabold text-slate-900 flex items-center gap-2">
                         <TrendingUp className="h-5 w-5 text-emerald-650" />
-                        Agricultural Pricing & MSP Information Hub
+                        {t('pricing_hub_title')}
                       </h3>
-                      <p className="text-xs text-slate-400 mt-1">Review government Minimum Support Prices (MSP) and local market pricing updates.</p>
+                      <p className="text-xs text-slate-400 mt-1">{t('pricing_hub_desc')}</p>
                     </div>
                     
                     {/* Demo Warning Banner */}
                     <div className="flex items-center gap-2 bg-amber-50 border border-amber-205 text-amber-850 p-2.5 rounded-xl text-[10px] font-bold">
                       <AlertCircle className="h-4 w-4 text-amber-600 shrink-0" />
-                      <span>Demo Price Data. Values are for simulation/hackathon testing.</span>
+                      <span>{t('demo_warning_banner')}</span>
                     </div>
                   </div>
 
@@ -1611,7 +1810,7 @@ const FarmerDashboard: React.FC = () => {
                       <Search className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
                       <input
                         type="text"
-                        placeholder="Search crops... (e.g. Paddy, Wheat, Tomato, Cotton)"
+                        placeholder={t('search_crop')}
                         value={mspSearchQuery}
                         onChange={(e) => setMspSearchQuery(e.target.value)}
                         className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 pl-10 pr-4 text-xs font-semibold focus:outline-none focus:border-emerald-500 focus:bg-white"
@@ -1623,13 +1822,13 @@ const FarmerDashboard: React.FC = () => {
                         <button
                           key={cat}
                           onClick={() => setMspCategoryFilter(cat)}
-                          className={`px-3 py-2 rounded-xl text-xs font-bold whitespace-nowrap cursor-pointer ${
+                          className={`px-3 py-2 rounded-xl text-xs font-bold whitespace-nowrap cursor-pointer transition-all ${
                             mspCategoryFilter === cat 
                               ? 'bg-emerald-600 text-white shadow-sm' 
                               : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                           }`}
                         >
-                          {cat}
+                          {cat === 'All' ? t('all_categories') : cat === 'Grains' ? t('grains') : cat === 'Pulses' ? t('pulses') : cat === 'Vegetables' ? t('vegetables') : t('oilseeds')}
                         </button>
                       ))}
                     </div>
@@ -1637,102 +1836,249 @@ const FarmerDashboard: React.FC = () => {
                 </div>
 
                 {/* Produce grid cards */}
-                <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+                <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
                   {filteredMspItems.map((item) => (
                     <div 
                       key={item.name} 
-                      className="bg-white border border-slate-200 rounded-3xl p-5 shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between h-48"
+                      className="bg-white border border-slate-200 rounded-3xl overflow-hidden shadow-sm hover:shadow-md transition-all hover:translate-y-[-2px] flex flex-col justify-between"
                     >
-                      <div>
-                        <div className="flex items-center justify-between mb-3.5">
-                          <div className="flex items-center gap-2">
-                            <span className="text-2xl">{item.image}</span>
-                            <span className="text-sm font-extrabold text-slate-900">{item.name}</span>
-                          </div>
-                          <span className={`text-[8px] font-extrabold uppercase px-2 py-0.5 rounded-full ${
-                            item.type === 'msp' 
-                              ? 'bg-emerald-100 text-emerald-800 border border-emerald-350/20' 
-                              : 'bg-slate-100 text-slate-650'
-                          }`}>
-                            {item.type === 'msp' ? 'Govt MSP' : 'Market Price'}
+                      {/* Crop Cover Image */}
+                      <div className="h-40 w-full relative">
+                        <img 
+                          src={item.imageUrl} 
+                          alt={t(item.nameKey)} 
+                          className="h-full w-full object-cover"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+                        <span className={`absolute top-3 right-3 text-[9px] font-extrabold uppercase px-2.5 py-1 rounded-full text-white shadow-sm ${
+                          item.type === 'msp' 
+                            ? 'bg-emerald-600 border border-emerald-500/30' 
+                            : 'bg-orange-600 border border-orange-500/30'
+                        }`}>
+                          {item.type === 'msp' ? t('msp_rate_label') : t('demo_price_label')}
+                        </span>
+                        
+                        <div className="absolute bottom-3 left-3 text-white">
+                          <h4 className="text-sm font-extrabold">{t(item.nameKey)}</h4>
+                          <span className="text-[9px] text-slate-200 font-bold uppercase bg-white/20 backdrop-blur-sm px-2 py-0.5 rounded mt-1 inline-block">
+                            {t(item.categoryKey)}
                           </span>
                         </div>
-
-                        <p className="text-[10px] text-slate-450 leading-relaxed font-medium mb-4">
-                          {item.info}
-                        </p>
                       </div>
 
-                      <div className="flex justify-between items-baseline border-t border-slate-50 pt-3">
-                        <span className="text-[9px] text-slate-400 font-bold uppercase">Price / {item.unit}</span>
-                        <div className="text-right">
-                          <span className={`text-base font-extrabold ${item.type === 'msp' ? 'text-emerald-650' : 'text-slate-800'}`}>
-                            {item.price}
-                          </span>
+                      <div className="p-5 flex-1 flex flex-col justify-between space-y-4">
+                        <p className="text-[11px] text-slate-500 leading-relaxed font-semibold">
+                          {t(item.infoKey)}
+                        </p>
+
+                        <div className="flex justify-between items-baseline border-t border-slate-100 pt-3">
+                          <span className="text-[9px] text-slate-400 font-bold uppercase">{t('price_label')}</span>
+                          <div className="text-right">
+                            <span className={`text-base font-black ${item.type === 'msp' ? 'text-emerald-600' : 'text-slate-800'}`}>
+                              {item.price}
+                            </span>
+                            <span className="text-[8px] text-slate-400 font-bold ml-1">{t(item.unitKey)}</span>
+                          </div>
                         </div>
                       </div>
                     </div>
                   ))}
                   
                   {filteredMspItems.length === 0 && (
-                    <div className="col-span-full text-center py-16 bg-white border border-slate-200 rounded-3xl text-slate-400">
+                    <div className="col-span-full text-center py-16 bg-white border border-slate-200 rounded-3xl text-slate-405">
                       <Search className="h-10 w-10 mx-auto opacity-30 mb-2" />
-                      <p className="text-xs font-bold">No crops matches your search.</p>
+                      <p className="text-xs font-bold">{t('no_active_registrations')}</p>
                     </div>
                   )}
                 </div>
               </motion.div>
             )}
+
+            {activeTab === 'booking' && (
+              <motion.div
+                key="booking"
+                initial={{ opacity: 0, y: 15 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -15 }}
+                className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm max-w-2xl mx-auto space-y-6"
+              >
+                <div className="flex items-center gap-2 border-b pb-4 mb-4">
+                  <Calendar className="h-6 w-6 text-emerald-600" />
+                  <div>
+                    <h3 className="text-base font-extrabold text-slate-900">{t('slot_booking_title')}</h3>
+                    <p className="text-xs text-slate-400 mt-0.5">Secure your appointment slot at government procurement PACS centres.</p>
+                  </div>
+                </div>
+
+                {!bookedProcurement ? (
+                  <form onSubmit={handleBookSlotSubmit} className="space-y-6">
+                    <div>
+                      <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
+                        {t('select_registration_label')}
+                      </label>
+                      <select
+                        value={selectedBookingRegId}
+                        onChange={(e) => setSelectedBookingRegId(e.target.value)}
+                        className="w-full rounded-xl border border-slate-200 bg-slate-50 py-3 px-4 text-xs font-semibold focus:outline-none focus:border-emerald-500 animate-none"
+                        required
+                      >
+                        <option value="">{t('select_option_placeholder')}</option>
+                        {registrations.map(reg => (
+                          <option key={reg.id} value={reg.id}>
+                            {reg.crop_name} - {reg.registration_number} ({reg.expected_quantity} {reg.quantity_unit || 'Qtl'}) [{reg.status}]
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {selectedBookingRegId && (() => {
+                      const selectedRegItem = registrations.find(r => r.id.toString() === selectedBookingRegId);
+                      if (!selectedRegItem) return null;
+                      const isEligible = ['Approved', 'Sample Verified'].includes(selectedRegItem.status);
+
+                      if (!isEligible) {
+                        return (
+                          <div className="bg-amber-50 border border-amber-205 text-amber-850 p-4 rounded-2xl flex gap-3 text-xs">
+                            <AlertTriangle className="h-5 w-5 text-amber-600 shrink-0" />
+                            <div>
+                              <p className="font-extrabold">{t('booking_restricted_title')}</p>
+                              <p className="mt-1 font-semibold leading-relaxed">{t('booking_eligibility_error')}</p>
+                            </div>
+                          </div>
+                        );
+                      }
+
+                      return (
+                        <div className="space-y-6">
+                          <div className="bg-slate-50/55 rounded-2xl p-4 border border-slate-100 grid grid-cols-2 gap-4 text-xs">
+                            <div>
+                              <p className="text-slate-400">Approved Crop</p>
+                              <p className="font-bold text-slate-800">{selectedRegItem.crop_name}</p>
+                            </div>
+                            <div>
+                              <p className="text-slate-400">{t('approved_qty')}</p>
+                              <p className="font-bold text-slate-800">{selectedRegItem.expected_quantity} {selectedRegItem.quantity_unit || 'Qtl'}</p>
+                            </div>
+                            <div>
+                              <p className="text-slate-400">PACS Center</p>
+                              <p className="font-bold text-slate-850">Warangal Agriculture PACS Centre</p>
+                            </div>
+                            <div>
+                              <p className="text-slate-400">Direct MSP Price</p>
+                              <p className="font-extrabold text-emerald-650">₹2,183 / Qtl</p>
+                            </div>
+                          </div>
+
+                          <div className="grid gap-6 sm:grid-cols-2">
+                            <div>
+                              <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
+                                {t('select_date_label')}
+                              </label>
+                              <input
+                                type="date"
+                                value={slotDate}
+                                onChange={(e) => setSlotDate(e.target.value)}
+                                className="w-full rounded-xl border border-slate-200 bg-slate-50 py-3 px-4 text-xs font-semibold focus:outline-none focus:border-emerald-500"
+                                required
+                                min={new Date().toISOString().split('T')[0]}
+                              />
+                            </div>
+
+                            <div>
+                              <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
+                                {t('select_time_label')}
+                              </label>
+                              <select
+                                value={slotTime}
+                                onChange={(e) => setSlotTime(e.target.value)}
+                                className="w-full rounded-xl border border-slate-200 bg-slate-50 py-3 px-4 text-xs font-semibold focus:outline-none focus:border-emerald-500"
+                                required
+                              >
+                                <option value="09:00 AM - 11:00 AM">09:00 AM - 11:00 AM</option>
+                                <option value="11:00 AM - 01:00 PM">11:00 AM - 01:00 PM</option>
+                                <option value="02:00 PM - 04:00 PM">02:00 PM - 04:00 PM</option>
+                              </select>
+                            </div>
+                          </div>
+
+                          <button
+                            type="submit"
+                            className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold py-3 px-4 rounded-xl text-xs uppercase tracking-wider shadow cursor-pointer transition-all"
+                          >
+                            {t('confirm_booking_btn')}
+                          </button>
+                        </div>
+                      );
+                    })()}
+                  </form>
+                ) : (
+                  /* Slot booking receipt section */
+                  <div className="space-y-6 printable-section">
+                    <div className="text-center space-y-2 border-b pb-6">
+                      <div className="h-12 w-12 rounded-full bg-emerald-100 text-emerald-650 flex items-center justify-center mx-auto mb-2 shadow-sm">
+                        <CheckCircle className="h-7 w-7" />
+                      </div>
+                      <h4 className="text-base font-extrabold text-emerald-700">{t('slot_booked_receipt')}</h4>
+                      <p className="text-xs text-slate-450 font-bold uppercase">Procurement Booking Reference Number: {bookedProcurement.procurement_number}</p>
+                    </div>
+
+                    <div className="bg-slate-50/50 rounded-3xl p-5 border border-slate-100/80 space-y-3.5 text-xs">
+                      <h5 className="font-extrabold uppercase text-[10px] text-slate-400 tracking-wider mb-2 border-b pb-1.5">{t('booking_receipt_title')}</h5>
+                      <div className="flex justify-between border-b border-slate-100 pb-2">
+                        <span className="text-slate-450 font-bold">{t('farmer_name')}</span>
+                        <span className="font-bold text-slate-800">{name}</span>
+                      </div>
+                      <div className="flex justify-between border-b border-slate-100 pb-2">
+                        <span className="text-slate-450 font-bold">Crop / Produce</span>
+                        <span className="font-bold text-slate-800">{bookedProcurement.crop_name}</span>
+                      </div>
+                      <div className="flex justify-between border-b border-slate-100 pb-2">
+                        <span className="text-slate-450 font-bold">{t('approved_qty')}</span>
+                        <span className="font-bold text-slate-800">{bookedProcurement.quantity} Qtl</span>
+                      </div>
+                      <div className="flex justify-between border-b border-slate-100 pb-2">
+                        <span className="text-slate-450 font-bold">{t('procurement_centre')}</span>
+                        <span className="font-bold text-slate-800">{bookedProcurement.centre_name || 'Warangal Agriculture PACS Centre'}</span>
+                      </div>
+                      <div className="flex justify-between border-b border-slate-100 pb-2">
+                        <span className="text-slate-450 font-bold">{t('weigh_in_schedule')}</span>
+                        <span className="font-bold text-slate-800">{bookedProcurement.slot_date} ({bookedProcurement.slot_time})</span>
+                      </div>
+                      <div className="flex justify-between pt-1">
+                        <span className="text-slate-450 font-bold">Direct Benefit Payout (Est)</span>
+                        <span className="font-black text-emerald-650">₹{(bookedProcurement.quantity * 2183).toLocaleString('en-IN')}</span>
+                      </div>
+                    </div>
+
+                    <div className="flex gap-4 no-print">
+                      <button
+                        type="button"
+                        onClick={() => window.print()}
+                        className="flex-1 bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 font-extrabold py-3 rounded-xl text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer shadow-sm"
+                      >
+                        <FileText className="h-4.5 w-4.5" />
+                        {t('print_receipt')}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setBookedProcurement(null);
+                          setSelectedBookingRegId('');
+                          setSlotDate('');
+                          setActiveTab('overview');
+                        }}
+                        className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold py-3 rounded-xl text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer shadow-md"
+                      >
+                        {t('close')}
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </motion.div>
+            )}
           </AnimatePresence>
         </div>
       </main>
-
-      {/* FLOATING VOICE NAVIGATION ASSISTANT (Premium Implementation) */}
-      <div className="fixed bottom-6 right-6 z-50">
-        <button
-          type="button"
-          onClick={startListening}
-          className={`h-16 w-16 rounded-full flex items-center justify-center shadow-2xl transition-transform hover:scale-110 active:scale-95 cursor-pointer border ${
-            voiceActive ? 'bg-red-500 border-red-400 text-white animate-pulse' : 'bg-emerald-600 border-emerald-500 text-white'
-          }`}
-          title="Voice Assistant Navigation"
-        >
-          <Mic className="h-7 w-7" />
-        </button>
-
-        {voiceActive && (
-          <div className="absolute bottom-20 right-0 w-72 bg-white border border-slate-200 p-4 rounded-2xl shadow-2xl space-y-3 z-50">
-            <div className="flex items-center gap-2">
-              <div className="flex gap-0.5 items-center h-4 shrink-0">
-                <div className="wave-bar !h-3" />
-                <div className="wave-bar !h-4" />
-                <div className="wave-bar !h-2" />
-              </div>
-              <span className="text-xs font-bold text-slate-700 animate-pulse">Listening... Speak now</span>
-            </div>
-            
-            {voiceText && (
-              <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-100 text-xs">
-                <p className="text-[9px] uppercase font-bold text-slate-400">Heard:</p>
-                <p className="font-bold text-slate-800 mt-0.5">"{voiceText}"</p>
-              </div>
-            )}
-          </div>
-        )}
-
-        {voiceReply && !voiceActive && (
-          <div className="absolute bottom-20 right-0 w-72 bg-emerald-50 text-emerald-850 border border-emerald-200 p-4 rounded-2xl shadow-2xl space-y-2 z-50">
-            <p className="text-[9px] uppercase font-bold text-emerald-600">Assistant Response:</p>
-            <p className="text-xs font-semibold leading-relaxed text-slate-850">{voiceReply}</p>
-            <button 
-              onClick={() => setVoiceReply('')} 
-              className="text-[10px] text-slate-450 hover:text-slate-700 hover:underline font-bold mt-1 block"
-            >
-              Dismiss
-            </button>
-          </div>
-        )}
-      </div>
 
       {/* 1. CAMERA SIMULATOR MODAL PANEL */}
       <AnimatePresence>

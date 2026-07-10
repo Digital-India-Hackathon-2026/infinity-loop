@@ -100,6 +100,7 @@ class CropRegistration(Base):
     village = Column(String, nullable=False)
     phone_number = Column(String, nullable=False)
     status = Column(String, default="Registered")  # "Registered", "Images Uploaded", "AI Reviewed", "Sample Requested", "Sample Verified", "Approved", "Slot Booked", "Procured", "Payment Initiated", "Payment Completed"
+    rejection_reason = Column(String, nullable=True)
     
     # Harvested produce fields (nullable for pre-harvest compatibility)
     produce_category = Column(String, nullable=True)
@@ -128,6 +129,8 @@ class ProduceImage(Base):
     gps_longitude = Column(Float, nullable=False)
     gps_location_name = Column(String, nullable=False)
     device_info = Column(String, nullable=False)
+    image_source = Column(String, default="Live Camera")  # "Live Camera", "Local Upload"
+    upload_time = Column(String, nullable=True)           # Separate upload timestamp
     timestamp = Column(DateTime, default=datetime.datetime.utcnow)
 
     registration = relationship("CropRegistration", back_populates="images")
@@ -162,10 +165,30 @@ class SampleVerification(Base):
     grain_quality = Column(String, nullable=False)  # "A Grade", "B Grade", "Common", "Rejected"
     remarks = Column(Text, nullable=True)
     status = Column(String, nullable=False)  # "Approved", "Rejected", "Need Reinspection"
+    
+    # New slot requesting fields
+    verification_centre = Column(String, nullable=True)
+    verification_date = Column(String, nullable=True)
+    verification_time = Column(String, nullable=True)
+    sample_instructions = Column(Text, nullable=True)
+    
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
 
     registration = relationship("CropRegistration", back_populates="sample_verification")
     officer = relationship("Officer", back_populates="verifications")
+
+
+class ProcurementSlot(Base):
+    __tablename__ = "procurement_slots"
+
+    id = Column(Integer, primary_key=True, index=True)
+    centre_id = Column(Integer, ForeignKey("procurement_centres.id", ondelete="CASCADE"), nullable=False)
+    slot_date = Column(String, nullable=False)  # YYYY-MM-DD
+    slot_time = Column(String, nullable=False)  # e.g., "10:00 AM", "12:00 PM", "02:00 PM"
+    capacity = Column(Integer, default=5)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+
+    centre = relationship("ProcurementCentre")
 
 
 class Procurement(Base):

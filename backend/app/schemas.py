@@ -99,6 +99,8 @@ class ProduceImageCreate(BaseModel):
     gps_longitude: float
     gps_location_name: str
     device_info: str
+    image_source: Optional[str] = "Live Camera"
+    upload_time: Optional[str] = None
 
 class ProduceImageResponse(BaseModel):
     id: int
@@ -109,6 +111,8 @@ class ProduceImageResponse(BaseModel):
     gps_longitude: float
     gps_location_name: str
     device_info: str
+    image_source: Optional[str] = "Live Camera"
+    upload_time: Optional[str] = None
     timestamp: datetime
 
     class Config:
@@ -157,6 +161,7 @@ class CropRegistrationResponse(BaseModel):
     village: str
     phone_number: str
     status: str
+    rejection_reason: Optional[str] = None
     created_at: datetime
     images: List[ProduceImageResponse] = []
     
@@ -194,6 +199,10 @@ class SampleVerificationCreate(BaseModel):
     grain_quality: str
     remarks: Optional[str] = None
     status: str  # "Approved", "Rejected", "Need Reinspection"
+    verification_centre: Optional[str] = None
+    verification_date: Optional[str] = None
+    verification_time: Optional[str] = None
+    sample_instructions: Optional[str] = None
 
 class SampleVerificationResponse(BaseModel):
     id: int
@@ -204,6 +213,10 @@ class SampleVerificationResponse(BaseModel):
     grain_quality: str
     remarks: Optional[str] = None
     status: str
+    verification_centre: Optional[str] = None
+    verification_date: Optional[str] = None
+    verification_time: Optional[str] = None
+    sample_instructions: Optional[str] = None
     created_at: datetime
 
     class Config:
@@ -213,6 +226,16 @@ class SampleVerificationResponse(BaseModel):
 class SlotBookingRequest(BaseModel):
     slot_date: str
     slot_time: str
+
+class ProcurementSlotResponse(BaseModel):
+    id: int
+    centre_id: int
+    slot_date: str
+    slot_time: str
+    capacity: int
+
+    class Config:
+        from_attributes = True
 
 # --- Procurement Schemas ---
 class ProcurementCreate(BaseModel):

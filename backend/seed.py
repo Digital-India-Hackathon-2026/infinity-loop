@@ -86,6 +86,21 @@ def seed_data():
         db.commit()
         print("[OK] Seeded Procurement Centres.")
 
+        # Seed available slots for the next 10 days for each centre
+        for centre in centre_objects:
+            for day in range(10):
+                slot_date = (datetime.date.today() + datetime.timedelta(days=day)).strftime("%Y-%m-%d")
+                for slot_time in ["10:00 AM", "12:00 PM", "02:00 PM", "04:00 PM"]:
+                    db_slot = models.ProcurementSlot(
+                        centre_id=centre.id,
+                        slot_date=slot_date,
+                        slot_time=slot_time,
+                        capacity=random.randint(3, 8)
+                    )
+                    db.add(db_slot)
+        db.commit()
+        print("[OK] Seeded Procurement Slots.")
+
         # 3. Seed 1 Admin User
         admin_user = models.User(
             name="Srinivas Rao",

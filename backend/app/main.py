@@ -327,6 +327,8 @@ def upload_produce_images(
     gps_longitude: float = Form(...),
     gps_location_name: str = Form(...),
     device_info: str = Form(...),
+    image_source: str = Form("Live Camera"),
+    upload_time: Optional[str] = Form(None),
     file: UploadFile = File(...),
     current_user: models.User = Depends(auth.require_role(["farmer"])),
     db: Session = Depends(get_db)
@@ -359,18 +361,15 @@ def upload_produce_images(
         gps_latitude=gps_latitude,
         gps_longitude=gps_longitude,
         gps_location_name=gps_location_name,
-        device_info=device_info
+        device_info=device_info,
+        image_source=image_source,
+        upload_time=upload_time
     )
     db.add(prod_image)
-    
-    # Check if we have uploaded all three required images
     db.commit()
     
-    uploaded_types = db.query(models.ProduceImage.image_type).filter(models.ProduceImage.registration_id == id).all()
-    types_list = [t[0] for t in uploaded_types]
-    
-    # If standard images are loaded, progress status
-    if "full_produce" in types_list and "close_up" in types_list and "storage_view" in types_list:
+    # If standard primary image (close_up) is loaded, progress status immediately
+    if image_type == "close_up":
         crop_reg.status = "Images Uploaded"
         db.commit()
         
@@ -471,9 +470,10 @@ def book_procurement_slot(
         raise HTTPException(status_code=403, detail="Access denied.")
         
     if crop_reg.status not in ["Approved", "Sample Verified"]:
-        # Auto-bypass sample verification for demo slot booking if required, but standard workflow demands verification
-        # For seamless demo, if the crop status is AI Reviewed or Awaiting Verification, we can allow it
-        pass
+        raise HTTPException(
+            status_code=400,
+            detail="Slot booking is restricted. Crop registration status must be Approved or Sample Verified."
+        )
 
     # Retrieve MSP rate
     msp_info = db.query(models.MSPRate).filter(models.MSPRate.crop_name == crop_reg.crop_name).first()
@@ -681,19 +681,26 @@ def verify_sample(
         foreign_matter=payload.foreign_matter,
         grain_quality=payload.grain_quality,
         remarks=payload.remarks,
-        status=payload.status
+        status=payload.status,
+        verification_centre=payload.verification_centre,
+        verification_date=payload.verification_date,
+        verification_time=payload.verification_time,
+        sample_instructions=payload.sample_instructions
     )
     db.add(verification)
 
     # Update crop status
     if payload.status == "Approved":
         crop_reg.status = "Approved"
+        crop_reg.rejection_reason = None
         msg = f"Your crop sample for registration {crop_reg.registration_number} has been APPROVED by the procurement officer."
     elif payload.status == "Rejected":
         crop_reg.status = "Rejected"
+        crop_reg.rejection_reason = payload.remarks
         msg = f"Your crop sample for registration {crop_reg.registration_number} has been REJECTED: {payload.remarks}."
     else:
         crop_reg.status = "Sample Requested"
+        crop_reg.rejection_reason = None
         msg = f"Procurement officer has requested reinspection for {crop_reg.registration_number}."
         
     db.commit()
@@ -960,6 +967,20 @@ def get_admin_analytics(current_user: models.User = Depends(auth.require_role(["
         "district": r.district
     } for r in recent_regs]
 
+    # Status distributions
+    status_counts = db.query(
+        models.CropRegistration.status,
+        func.count(models.CropRegistration.id).label("count")
+    ).group_by(models.CropRegistration.status).all()
+    status_dist = [{"status": status, "count": count} for status, count in status_counts]
+
+    # Payment status distributions
+    payment_counts = db.query(
+        models.Payment.status,
+        func.count(models.Payment.id).label("count")
+    ).group_by(models.Payment.status).all()
+    payment_dist = [{"status": status, "count": count} for status, count in payment_counts]
+
     return {
         "metrics": {
             "total_farmers": total_farmers,
@@ -972,5 +993,7 @@ def get_admin_analytics(current_user: models.User = Depends(auth.require_role(["
         "district_distribution": district_dist,
         "monthly_trend": monthly_trend,
         "forecasts": forecasts,
-        "recent_registrations": recent
+        "recent_registrations": recent,
+        "status_distribution": status_dist,
+        "payment_distribution": payment_dist
     }

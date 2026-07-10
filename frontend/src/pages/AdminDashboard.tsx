@@ -32,6 +32,8 @@ const AdminDashboard: React.FC = () => {
   const [monthlyTrend, setMonthlyTrend] = useState<any[]>([]);
   const [forecasts, setForecasts] = useState<any[]>([]);
   const [recentRegs, setRecentRegs] = useState<any[]>([]);
+  const [statusDist, setStatusDist] = useState<any[]>([]);
+  const [paymentDist, setPaymentDist] = useState<any[]>([]);
 
   useEffect(() => {
     fetchAdminData();
@@ -46,6 +48,8 @@ const AdminDashboard: React.FC = () => {
       setMonthlyTrend(data.monthly_trend);
       setForecasts(data.forecasts);
       setRecentRegs(data.recent_registrations);
+      setStatusDist(data.status_distribution || []);
+      setPaymentDist(data.payment_distribution || []);
     } catch (e) {
       console.error(e);
     }
@@ -201,6 +205,65 @@ const AdminDashboard: React.FC = () => {
                     </div>
                   </div>
                 ))
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Workflow & Financial Insights */}
+        <div className="grid gap-6 md:grid-cols-12">
+          {/* Status Distribution */}
+          <div className="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 rounded-3xl p-6 shadow-sm md:col-span-6 space-y-4">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-450 flex items-center gap-2">
+              <Layers className="h-4.5 w-4.5 text-emerald-600" />
+              Registration status workflow breakdown
+            </h3>
+            <div className="h-60">
+              {statusDist.length === 0 ? (
+                <p className="text-xs text-slate-400 text-center py-20">No data available.</p>
+              ) : (
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={statusDist}>
+                    <XAxis dataKey="status" tick={{ fontSize: 9 }} stroke="#94a3b8" />
+                    <YAxis tick={{ fontSize: 10 }} stroke="#94a3b8" />
+                    <Tooltip contentStyle={{ fontSize: 11, borderRadius: 8 }} />
+                    <Bar dataKey="count" fill="#10b981" radius={[4, 4, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              )}
+            </div>
+          </div>
+
+          {/* Payment Status Distribution */}
+          <div className="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 rounded-3xl p-6 shadow-sm md:col-span-6 space-y-4">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-450 flex items-center gap-2">
+              <Landmark className="h-4.5 w-4.5 text-emerald-600" />
+              direct benefit transfer (DBT) payment logs
+            </h3>
+            <div className="h-60">
+              {paymentDist.length === 0 ? (
+                <p className="text-xs text-slate-400 text-center py-20">No payments initiated yet.</p>
+              ) : (
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={paymentDist}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={55}
+                      outerRadius={75}
+                      paddingAngle={3}
+                      dataKey="count"
+                      nameKey="status"
+                    >
+                      {paymentDist.map((_, index) => (
+                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip contentStyle={{ fontSize: 11, borderRadius: 8 }} />
+                    <Legend verticalAlign="bottom" height={36} />
+                  </PieChart>
+                </ResponsiveContainer>
               )}
             </div>
           </div>
