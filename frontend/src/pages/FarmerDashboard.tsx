@@ -180,6 +180,7 @@ const FarmerDashboard: React.FC = () => {
     freshness_badge: 'Freshly Harvested',
     image_url: 'https://images.unsplash.com/photo-1574323347407-f5e1ad6d020b?auto=format&fit=crop&q=80&w=400'
   });
+  const [editProductId, setEditProductId] = useState<number | null>(null);
   const [loadingMarket, setLoadingMarket] = useState(false);
 
   const fetchFarmerProducts = async () => {
@@ -215,22 +216,44 @@ const FarmerDashboard: React.FC = () => {
   const handleCreateProduct = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await apiFetch('/api/marketplace/products', {
-        method: 'POST',
-        body: JSON.stringify({
-          name: newProductFormData.name,
-          description: newProductFormData.description,
-          category: newProductFormData.category,
-          price: parseFloat(newProductFormData.price),
-          original_price: parseFloat(newProductFormData.original_price || newProductFormData.price),
-          stock: parseFloat(newProductFormData.stock),
-          unit: newProductFormData.unit,
-          organic_badge: newProductFormData.organic_badge,
-          freshness_badge: newProductFormData.freshness_badge,
-          image_url: newProductFormData.image_url
-        })
-      });
-      alert("Product published to Marketplace successfully!");
+      if (editProductId) {
+        // Edit existing product
+        await apiFetch(`/api/marketplace/products/${editProductId}`, {
+          method: 'PUT',
+          body: JSON.stringify({
+            name: newProductFormData.name,
+            description: newProductFormData.description,
+            category: newProductFormData.category,
+            price: parseFloat(newProductFormData.price),
+            original_price: parseFloat(newProductFormData.original_price || newProductFormData.price),
+            stock: parseFloat(newProductFormData.stock),
+            unit: newProductFormData.unit,
+            organic_badge: newProductFormData.organic_badge,
+            freshness_badge: newProductFormData.freshness_badge,
+            image_url: newProductFormData.image_url
+          })
+        });
+        alert("Product updated successfully!");
+        setEditProductId(null);
+      } else {
+        // Create new product
+        await apiFetch('/api/marketplace/products', {
+          method: 'POST',
+          body: JSON.stringify({
+            name: newProductFormData.name,
+            description: newProductFormData.description,
+            category: newProductFormData.category,
+            price: parseFloat(newProductFormData.price),
+            original_price: parseFloat(newProductFormData.original_price || newProductFormData.price),
+            stock: parseFloat(newProductFormData.stock),
+            unit: newProductFormData.unit,
+            organic_badge: newProductFormData.organic_badge,
+            freshness_badge: newProductFormData.freshness_badge,
+            image_url: newProductFormData.image_url
+          })
+        });
+        alert("Product published to Marketplace successfully!");
+      }
       setNewProductFormData({
         name: '',
         description: '',
@@ -246,7 +269,37 @@ const FarmerDashboard: React.FC = () => {
       fetchFarmerProducts();
       fetchFarmerAnalytics();
     } catch (err: any) {
-      alert(err.message || "Failed to publish product.");
+      alert(err.message || "Failed to save product.");
+    }
+  };
+
+  const handleStartEditProduct = (p: any) => {
+    setEditProductId(p.id);
+    setNewProductFormData({
+      name: p.name,
+      description: p.description,
+      category: p.category,
+      price: String(p.price),
+      original_price: String(p.original_price || ''),
+      stock: String(p.stock),
+      unit: p.unit || 'kg',
+      organic_badge: p.organic_badge || false,
+      freshness_badge: p.freshness_badge || 'Freshly Harvested',
+      image_url: p.image_url || 'https://images.unsplash.com/photo-1574323347407-f5e1ad6d020b?auto=format&fit=crop&q=80&w=400'
+    });
+  };
+
+  const handleDeleteProduct = async (prodId: number) => {
+    if (!window.confirm("Are you sure you want to delete this product from the marketplace?")) return;
+    try {
+      await apiFetch(`/api/marketplace/products/${prodId}`, {
+        method: 'DELETE'
+      });
+      alert("Product deleted successfully!");
+      fetchFarmerProducts();
+      fetchFarmerAnalytics();
+    } catch (err: any) {
+      alert(err.message || "Failed to delete product.");
     }
   };
 
@@ -2345,43 +2398,82 @@ const FarmerDashboard: React.FC = () => {
                           type="submit"
                           className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold rounded-xl text-xs uppercase tracking-wider transition-all cursor-pointer shadow-md"
                         >
-                          Publish to Mandi
+                          {editProductId ? 'Save Product Details' : 'Publish to Mandi'}
                         </button>
+                        {editProductId && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setEditProductId(null);
+                              setNewProductFormData({
+                                name: '',
+                                description: '',
+                                category: 'Grains',
+                                price: '',
+                                original_price: '',
+                                stock: '',
+                                unit: 'kg',
+                                organic_badge: false,
+                                freshness_badge: 'Freshly Harvested',
+                                image_url: 'https://images.unsplash.com/photo-1574323347407-f5e1ad6d020b?auto=format&fit=crop&q=80&w=400'
+                              });
+                            }}
+                            className="w-full mt-2 py-2 bg-slate-100 hover:bg-slate-200 border text-slate-700 font-bold rounded-xl text-xs uppercase tracking-wider transition-all cursor-pointer"
+                          >
+                            Cancel Edit
+                          </button>
+                        )}
                       </form>
                     </div>
-
-                    {/* Products Grid (Col 7) */}
-                    <div className="md:col-span-7 space-y-4">
-                      <h3 className="text-sm font-extrabold text-slate-900 uppercase tracking-wider flex items-center gap-2">
-                        🌾 Published Produce ({marketProducts.length})
-                      </h3>
-                      
-                      {loadingMarket ? (
-                        <div className="text-center py-20 bg-white border rounded-3xl">
-                          <div className="animate-spin h-6 w-6 border-2 border-emerald-600 border-t-transparent rounded-full mx-auto" />
-                        </div>
-                      ) : (
-                        <div className="grid gap-4 sm:grid-cols-2">
-                          {marketProducts.map((p) => (
-                            <div key={p.id} className="bg-white border rounded-2xl overflow-hidden shadow-sm flex flex-col justify-between">
-                              <div className="relative h-32 bg-slate-100">
-                                <img src={p.image_url} alt={p.name} className="h-full w-full object-cover" />
-                                {p.organic_badge && (
-                                  <span className="absolute top-2 left-2 bg-teal-600 text-white text-[8px] font-extrabold px-2 py-0.5 rounded">Organic</span>
-                                )}
-                              </div>
-                              <div className="p-4 space-y-2.5 flex-1 flex flex-col justify-between">
-                                <div>
-                                  <h4 className="text-xs font-extrabold text-slate-900">{p.name}</h4>
-                                  <p className="text-[10px] text-slate-400 font-semibold line-clamp-1">{p.category} • ₹{p.price} / {p.unit}</p>
-                                </div>
-                                <div className="flex justify-between items-center text-[10px] font-bold border-t pt-2">
-                                  <span className="text-slate-500">Stock: {p.stock} {p.unit}</span>
-                                  <span className="text-amber-500">★ {p.rating} / 5</span>
-                                </div>
-                              </div>
-                            </div>
-                          ))}
+ 
+                     {/* Products Grid (Col 7) */}
+                     <div className="md:col-span-7 space-y-4">
+                       <h3 className="text-sm font-extrabold text-slate-900 uppercase tracking-wider flex items-center gap-2">
+                         🌾 Published Produce ({marketProducts.length})
+                       </h3>
+                       
+                       {loadingMarket ? (
+                         <div className="text-center py-20 bg-white border rounded-3xl">
+                           <div className="animate-spin h-6 w-6 border-2 border-emerald-600 border-t-transparent rounded-full mx-auto" />
+                         </div>
+                       ) : (
+                         <div className="grid gap-4 sm:grid-cols-2">
+                           {marketProducts.map((p) => (
+                             <div key={p.id} className="bg-white border rounded-2xl overflow-hidden shadow-sm flex flex-col justify-between">
+                               <div className="relative h-32 bg-slate-100">
+                                 <img src={p.image_url} alt={p.name} className="h-full w-full object-cover" />
+                                 {p.organic_badge && (
+                                   <span className="absolute top-2 left-2 bg-teal-600 text-white text-[8px] font-extrabold px-2 py-0.5 rounded">Organic</span>
+                                 )}
+                               </div>
+                               <div className="p-4 space-y-2.5 flex-1 flex flex-col justify-between">
+                                 <div>
+                                   <h4 className="text-xs font-extrabold text-slate-900">{p.name}</h4>
+                                   <p className="text-[10px] text-slate-400 font-semibold line-clamp-1">{p.category} • ₹{p.price} / {p.unit}</p>
+                                 </div>
+                                 <div className="flex flex-col gap-2 border-t pt-2 mt-2">
+                                   <div className="flex justify-between items-center text-[10px] font-bold">
+                                     <span className="text-slate-500">Stock: {p.stock} {p.unit}</span>
+                                     <span className="text-amber-500">★ {p.rating} / 5</span>
+                                   </div>
+                                   <div className="flex gap-2">
+                                     <button
+                                       onClick={() => handleStartEditProduct(p)}
+                                       className="flex-1 bg-slate-100 hover:bg-slate-200 border text-slate-700 text-[10px] font-bold py-1.5 px-2 rounded-lg cursor-pointer transition-all"
+                                     >
+                                       Edit Details
+                                     </button>
+                                     <button
+                                       onClick={() => handleDeleteProduct(p.id)}
+                                       className="bg-red-50 hover:bg-red-100 border border-red-200 text-red-600 text-[10px] font-bold py-1.5 px-2.5 rounded-lg cursor-pointer transition-all"
+                                     >
+                                       Delete
+                                     </button>
+                                   </div>
+                                 </div>
+                               </div>
+                             </div>
+                           ))}
 
                           {marketProducts.length === 0 && (
                             <div className="col-span-full text-center py-20 bg-white border rounded-3xl text-slate-400 font-bold">

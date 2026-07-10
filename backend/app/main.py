@@ -833,6 +833,38 @@ def get_digital_receipt(id: int, db: Session = Depends(get_db)):
 
 # --- PAYMENT PROGRESS ACTIONS ---
 
+@app.get("/api/officer/payments")
+def list_payments(current_user: models.User = Depends(auth.require_role(["officer", "admin"])), db: Session = Depends(get_db)):
+    """Retrieve all direct benefit transfer payment records with farmer name, crop name and details."""
+    payments = db.query(models.Payment).order_by(models.Payment.id.desc()).all()
+    results = []
+    for p in payments:
+        proc = p.procurement
+        crop_name = "N/A"
+        qty = 0.0
+        reg_num = "N/A"
+        if proc and proc.registration:
+            crop_name = proc.registration.crop_name
+            qty = proc.actual_quantity or proc.declared_quantity or 0.0
+            reg_num = proc.registration.registration_number
+            
+        results.append({
+            "id": p.id,
+            "procurement_id": p.procurement_id,
+            "farmer_id": p.farmer_id,
+            "farmer_name": p.farmer.user.name if p.farmer and p.farmer.user else "N/A",
+            "crop_name": crop_name,
+            "quantity": qty,
+            "registration_number": reg_num,
+            "amount": p.amount,
+            "status": p.status,
+            "transaction_reference": p.transaction_reference,
+            "payment_date": p.payment_date.isoformat() if p.payment_date else None,
+            "expected_date": p.expected_date.isoformat() if p.expected_date else None,
+            "created_at": p.created_at.isoformat()
+        })
+    return results
+
 @app.post("/api/officer/payments/{id}/update", response_model=schemas.PaymentResponse)
 def update_payment_status(
     id: int,

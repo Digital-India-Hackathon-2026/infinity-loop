@@ -62,6 +62,8 @@ const OfficerDashboard: React.FC = () => {
   // Search & Filter
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
+  const [activeTab, setActiveTab] = useState<'inspections' | 'payments'>('inspections');
+  const [payments, setPayments] = useState<any[]>([]);
 
   // Selected Farmer Detail Panel
   const [selectedReq, setSelectedReq] = useState<any | null>(null);
@@ -170,6 +172,43 @@ const OfficerDashboard: React.FC = () => {
       console.error(e);
     }
   };
+
+  const fetchPayments = async () => {
+    try {
+      setLoading(true);
+      const list = await apiFetch('/api/officer/payments');
+      setPayments(list);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleUpdatePayment = async (payId: number, nextStatus: string) => {
+    try {
+      const txnRef = nextStatus === 'Completed' ? `TXN-${Math.floor(1000000000 + Math.random() * 9000000000)}` : null;
+      await apiFetch(`/api/officer/payments/${payId}/update`, {
+        method: 'POST',
+        body: JSON.stringify({
+          status: nextStatus,
+          transaction_reference: txnRef
+        })
+      });
+      fetchPayments();
+      fetchOfficerData();
+    } catch (err: any) {
+      alert(err.message || 'Payment status update failed.');
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === 'payments') {
+      fetchPayments();
+    } else {
+      fetchOfficerData();
+    }
+  }, [activeTab]);
 
   const filterRequests = () => {
     let result = [...requests];
@@ -340,94 +379,186 @@ const OfficerDashboard: React.FC = () => {
 
           <div className="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 rounded-3xl p-6 shadow-sm space-y-4">
             
-            {/* Search & Filter headers */}
-            <div className="flex justify-between items-center gap-4">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
-                <input
-                  type="text"
-                  placeholder="Search Farmer name or Reg ID..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-9 pr-4 py-2 border rounded-xl bg-slate-50 dark:bg-slate-950 dark:border-slate-800 text-xs font-semibold focus:outline-none"
-                />
-              </div>
-
-              <select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-                className="border p-2 rounded-xl bg-slate-50 dark:bg-slate-950 dark:border-slate-800 text-xs font-semibold focus:outline-none"
+            {/* Tab Navigation header */}
+            <div className="flex border-b pb-1 dark:border-slate-800 mb-4 gap-6 no-print">
+              <button
+                onClick={() => setActiveTab('inspections')}
+                className={`pb-2.5 text-xs font-bold uppercase tracking-wider relative transition-all cursor-pointer ${activeTab === 'inspections' ? 'text-emerald-600 dark:text-emerald-450 border-b-2 border-emerald-500' : 'text-slate-400 hover:text-slate-700'}`}
               >
-                <option value="All">All Statuses</option>
-                <option value="Registered">Registered</option>
-                <option value="Images Uploaded">Images Uploaded</option>
-                <option value="AI Reviewed">AI Reviewed</option>
-                <option value="Slot Booked">Slot Booked</option>
-                <option value="Procured">Procured</option>
-                <option value="Payment Completed">Payment Completed</option>
-              </select>
+                Crop Inspections & Weigh-ins
+              </button>
+              <button
+                onClick={() => setActiveTab('payments')}
+                className={`pb-2.5 text-xs font-bold uppercase tracking-wider relative transition-all cursor-pointer ${activeTab === 'payments' ? 'text-emerald-600 dark:text-emerald-450 border-b-2 border-emerald-500' : 'text-slate-400 hover:text-slate-700'}`}
+              >
+                Direct Benefit Transfer (DBT) Payouts
+              </button>
             </div>
 
-            {/* REQUEST TABLE GRID */}
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse text-xs">
-                <thead>
-                  <tr className="border-b dark:border-slate-800 text-slate-400 font-bold">
-                    <th className="pb-3">Farmer</th>
-                    <th className="pb-3">Crop / ID</th>
-                    <th className="pb-3">Quantity</th>
-                    <th className="pb-3">AI Score</th>
-                    <th className="pb-3">Status</th>
-                    <th className="pb-3 text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100 dark:divide-slate-850 font-medium">
-                  {loading ? (
-                    <tr>
-                      <td colSpan={6} className="text-center py-6 text-slate-400">Loading Queue...</td>
-                    </tr>
-                  ) : filteredRequests.length === 0 ? (
-                    <tr>
-                      <td colSpan={6} className="text-center py-12 text-slate-400">No requests found.</td>
-                    </tr>
-                  ) : (
-                    filteredRequests.map((req) => (
-                      <tr key={req.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-900/50 transition-colors">
-                        <td className="py-3.5 font-bold text-slate-800 dark:text-slate-200">{req.farmer_name}</td>
-                        <td className="py-3.5">
-                          <p className="font-bold">{req.crop_name}</p>
-                          <p className="text-[10px] text-slate-400 font-mono">{req.registration_number}</p>
-                        </td>
-                        <td className="py-3.5">{req.quantity} Qtl</td>
-                        <td className="py-3.5">
-                          <span className={`px-2 py-0.5 rounded font-bold ${req.ai_score >= 85 ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40' : 'bg-slate-50 text-slate-500'}`}>
-                            {req.ai_score ? `${req.ai_score}%` : 'N/A'}
-                          </span>
-                        </td>
-                        <td className="py-3.5">
-                          <span className={`rounded-full px-2 py-0.5 text-[9px] font-bold ${
-                            req.status === 'Payment Completed' ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300' :
-                            req.status === 'Procured' ? 'bg-blue-100 text-blue-800 dark:bg-blue-950/40' :
-                            req.status === 'Slot Booked' ? 'bg-gov-gold-100 text-gov-gold-800' : 'bg-slate-100 text-slate-700'
-                          }`}>
-                            {req.status}
-                          </span>
-                        </td>
-                        <td className="py-3.5 text-right">
-                          <button
-                            onClick={() => handleSelectRequest(req)}
-                            className="bg-slate-100 border text-slate-700 dark:bg-slate-850 dark:border-slate-800 dark:text-slate-300 hover:bg-emerald-600 hover:text-white px-3 py-1.5 rounded-lg flex items-center gap-1.5 ml-auto font-bold"
-                          >
-                            <Eye className="h-3.5 w-3.5" />
-                            View
-                          </button>
-                        </td>
+            {activeTab === 'inspections' ? (
+              <>
+                {/* Search & Filter headers */}
+                <div className="flex justify-between items-center gap-4">
+                  <div className="relative flex-1">
+                    <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+                    <input
+                      type="text"
+                      placeholder="Search Farmer name or Reg ID..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="w-full pl-9 pr-4 py-2 border rounded-xl bg-slate-50 dark:bg-slate-950 dark:border-slate-800 text-xs font-semibold focus:outline-none"
+                    />
+                  </div>
+
+                  <select
+                    value={statusFilter}
+                    onChange={(e) => setStatusFilter(e.target.value)}
+                    className="border p-2 rounded-xl bg-slate-50 dark:bg-slate-950 dark:border-slate-800 text-xs font-semibold focus:outline-none"
+                  >
+                    <option value="All">All Statuses</option>
+                    <option value="Registered">Registered</option>
+                    <option value="Images Uploaded">Images Uploaded</option>
+                    <option value="AI Reviewed">AI Reviewed</option>
+                    <option value="Slot Booked">Slot Booked</option>
+                    <option value="Procured">Procured</option>
+                    <option value="Payment Completed">Payment Completed</option>
+                  </select>
+                </div>
+
+                {/* REQUEST TABLE GRID */}
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left border-collapse text-xs">
+                    <thead>
+                      <tr className="border-b dark:border-slate-800 text-slate-400 font-bold">
+                        <th className="pb-3">Farmer</th>
+                        <th className="pb-3">Crop / ID</th>
+                        <th className="pb-3">Quantity</th>
+                        <th className="pb-3">AI Score</th>
+                        <th className="pb-3">Status</th>
+                        <th className="pb-3 text-right">Actions</th>
                       </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 dark:divide-slate-850 font-medium">
+                      {loading ? (
+                        <tr>
+                          <td colSpan={6} className="text-center py-6 text-slate-400">Loading Queue...</td>
+                        </tr>
+                      ) : filteredRequests.length === 0 ? (
+                        <tr>
+                          <td colSpan={6} className="text-center py-12 text-slate-400">No requests found.</td>
+                        </tr>
+                      ) : (
+                        filteredRequests.map((req) => (
+                          <tr key={req.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-900/50 transition-colors">
+                            <td className="py-3.5 font-bold text-slate-800 dark:text-slate-200">{req.farmer_name}</td>
+                            <td className="py-3.5">
+                              <p className="font-bold">{req.crop_name}</p>
+                              <p className="text-[10px] text-slate-400 font-mono">{req.registration_number}</p>
+                            </td>
+                            <td className="py-3.5">{req.quantity} Qtl</td>
+                            <td className="py-3.5">
+                              <span className={`px-2 py-0.5 rounded font-bold ${req.ai_score >= 85 ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40' : 'bg-slate-50 text-slate-500'}`}>
+                                {req.ai_score ? `${req.ai_score}%` : 'N/A'}
+                              </span>
+                            </td>
+                            <td className="py-3.5">
+                              <span className={`rounded-full px-2 py-0.5 text-[9px] font-bold ${
+                                req.status === 'Payment Completed' ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300' :
+                                req.status === 'Procured' ? 'bg-blue-100 text-blue-800 dark:bg-blue-950/40' :
+                                req.status === 'Slot Booked' ? 'bg-gov-gold-100 text-gov-gold-800' : 'bg-slate-100 text-slate-700'
+                              }`}>
+                                {req.status}
+                              </span>
+                            </td>
+                            <td className="py-3.5 text-right">
+                              <button
+                                onClick={() => handleSelectRequest(req)}
+                                className="bg-slate-100 border text-slate-700 dark:bg-slate-850 dark:border-slate-800 dark:text-slate-300 hover:bg-emerald-600 hover:text-white px-3 py-1.5 rounded-lg flex items-center gap-1.5 ml-auto font-bold cursor-pointer"
+                              >
+                                <Eye className="h-3.5 w-3.5" />
+                                View
+                              </button>
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </>
+            ) : (
+              <>
+                {/* PAYMENTS TABLE GRID */}
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left border-collapse text-xs">
+                    <thead>
+                      <tr className="border-b dark:border-slate-800 text-slate-400 font-bold">
+                        <th className="pb-3">Farmer & Reg ID</th>
+                        <th className="pb-3">Produce Type</th>
+                        <th className="pb-3">Net Volume</th>
+                        <th className="pb-3">Payout Amount</th>
+                        <th className="pb-3">DBT Status</th>
+                        <th className="pb-3 text-right">Action Desk</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 dark:divide-slate-850 font-medium">
+                      {loading ? (
+                        <tr>
+                          <td colSpan={6} className="text-center py-6 text-slate-400">Loading Payout Logs...</td>
+                        </tr>
+                      ) : payments.length === 0 ? (
+                        <tr>
+                          <td colSpan={6} className="text-center py-12 text-slate-400">No DBT payouts initiated yet.</td>
+                        </tr>
+                      ) : (
+                        payments.map((p) => (
+                          <tr key={p.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-900/50 transition-colors">
+                            <td className="py-3.5">
+                              <p className="font-bold text-slate-800 dark:text-slate-200">{p.farmer_name}</p>
+                              <p className="text-[10px] text-slate-400 font-mono">{p.registration_number}</p>
+                            </td>
+                            <td className="py-3.5 font-semibold">{p.crop_name}</td>
+                            <td className="py-3.5">{p.quantity} Qtl</td>
+                            <td className="py-3.5 font-bold text-slate-900 dark:text-white">₹{p.amount.toLocaleString()}</td>
+                            <td className="py-3.5">
+                              <span className={`rounded-full px-2 py-0.5 text-[9px] font-bold ${
+                                p.status === 'Completed' ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300' :
+                                p.status === 'Processing' ? 'bg-amber-100 text-amber-805' : 'bg-slate-100 text-slate-700'
+                              }`}>
+                                {p.status}
+                              </span>
+                            </td>
+                            <td className="py-3.5 text-right">
+                              {p.status === 'Initiated' && (
+                                <button
+                                  onClick={() => handleUpdatePayment(p.id, 'Processing')}
+                                  className="bg-blue-650 text-white hover:bg-blue-750 px-3 py-1.5 rounded-lg font-bold text-[10px] uppercase tracking-wider cursor-pointer shadow-sm transition-all"
+                                >
+                                  Process DBT
+                                </button>
+                              )}
+                              {p.status === 'Processing' && (
+                                <button
+                                  onClick={() => handleUpdatePayment(p.id, 'Completed')}
+                                  className="bg-emerald-600 text-white hover:bg-emerald-700 px-3 py-1.5 rounded-lg font-bold text-[10px] uppercase tracking-wider cursor-pointer shadow-sm transition-all"
+                                >
+                                  Release Payout
+                                </button>
+                              )}
+                              {p.status === 'Completed' && (
+                                <div className="text-[10px] text-emerald-600 font-mono font-bold">
+                                  {p.transaction_reference || 'PAID via DBT'}
+                                </div>
+                              )}
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </>
+            )}
           </div>
         </div>
 
