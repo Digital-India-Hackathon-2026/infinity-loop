@@ -100,6 +100,14 @@ class CropRegistration(Base):
     village = Column(String, nullable=False)
     phone_number = Column(String, nullable=False)
     status = Column(String, default="Registered")  # "Registered", "Images Uploaded", "AI Reviewed", "Sample Requested", "Sample Verified", "Approved", "Slot Booked", "Procured", "Payment Initiated", "Payment Completed"
+    
+    # Harvested produce fields (nullable for pre-harvest compatibility)
+    produce_category = Column(String, nullable=True)
+    quantity_unit = Column(String, nullable=True)
+    pin_code = Column(String, nullable=True)
+    harvest_date = Column(String, nullable=True)
+    produce_ready_status = Column(String, nullable=True)
+
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
 
     farmer = relationship("Farmer", back_populates="registrations")

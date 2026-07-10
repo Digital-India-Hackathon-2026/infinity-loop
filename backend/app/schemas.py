@@ -91,39 +91,6 @@ class OfficerResponse(BaseModel):
     class Config:
         from_attributes = True
 
-# --- Crop Registration Schemas ---
-class CropRegistrationCreate(BaseModel):
-    crop_name: str
-    crop_stage: str
-    expected_harvest_month: str
-    expected_quantity: float
-    land_area: float
-    state: str
-    district: str
-    mandal: str
-    village: str
-    phone_number: str
-
-class CropRegistrationResponse(BaseModel):
-    id: int
-    registration_number: str
-    farmer_id: int
-    crop_name: str
-    crop_stage: str
-    expected_harvest_month: str
-    expected_quantity: float
-    land_area: float
-    state: str
-    district: str
-    mandal: str
-    village: str
-    phone_number: str
-    status: str
-    created_at: datetime
-
-    class Config:
-        from_attributes = True
-
 # --- Image Upload Schemas ---
 class ProduceImageCreate(BaseModel):
     image_url: str
@@ -143,6 +110,62 @@ class ProduceImageResponse(BaseModel):
     gps_location_name: str
     device_info: str
     timestamp: datetime
+
+    class Config:
+        from_attributes = True
+
+# --- Crop Registration Schemas ---
+class CropRegistrationCreate(BaseModel):
+    crop_name: str
+    crop_stage: str
+    expected_harvest_month: str
+    expected_quantity: float
+    land_area: float
+    state: str
+    district: str
+    mandal: str
+    village: str
+    phone_number: str
+
+class ProduceRegistrationCreate(BaseModel):
+    farmer_name: str
+    phone_number: str
+    produce_name: str
+    produce_category: str
+    expected_quantity: float
+    quantity_unit: str
+    state: str
+    district: str
+    mandal: str
+    village: str
+    pin_code: str
+    harvest_date: str
+    produce_ready_status: str
+
+class CropRegistrationResponse(BaseModel):
+    id: int
+    registration_number: str
+    farmer_id: int
+    crop_name: str
+    crop_stage: str
+    expected_harvest_month: str
+    expected_quantity: float
+    land_area: float
+    state: str
+    district: str
+    mandal: str
+    village: str
+    phone_number: str
+    status: str
+    created_at: datetime
+    images: List[ProduceImageResponse] = []
+    
+    # Harvested produce fields
+    produce_category: Optional[str] = None
+    quantity_unit: Optional[str] = None
+    pin_code: Optional[str] = None
+    harvest_date: Optional[str] = None
+    produce_ready_status: Optional[str] = None
 
     class Config:
         from_attributes = True
@@ -219,6 +242,31 @@ class ProcurementResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+class ProcurementTimelineStep(BaseModel):
+    step: str
+    completed: bool
+    current: bool
+
+class FarmerProcurementDetailResponse(BaseModel):
+    id: int
+    procurement_number: str
+    registration_number: str
+    crop_name: str
+    product: str
+    quantity: float
+    centre_name: str
+    status: str
+    officer_remarks: Optional[str] = None
+    payment_status: str
+    slot_date: str
+    slot_time: str
+    total_amount: float
+    transaction_reference: Optional[str] = None
+    expected_payment_date: Optional[datetime] = None
+    payment_date: Optional[datetime] = None
+    timeline: List[ProcurementTimelineStep] = []
+    created_at: datetime
 
 # --- Payment Schemas ---
 class PaymentStatusUpdate(BaseModel):

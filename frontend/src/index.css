@@ -7,9 +7,7 @@
   body {
     @apply bg-slate-50 text-slate-900 font-sans antialiased transition-colors duration-300;
   }
-  body.dark {
-    @apply bg-slate-950 text-slate-50;
-  }
+
 }
 
 /* Glassmorphism Classes */
@@ -20,12 +18,7 @@
   border: 1px solid rgba(255, 255, 255, 0.25);
 }
 
-.dark .glass {
-  background: rgba(15, 23, 42, 0.7);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.05);
-}
+
 
 /* Leaflet Map Height & Custom Markers */
 .leaflet-container {
@@ -46,9 +39,7 @@
 ::-webkit-scrollbar-thumb {
   @apply bg-slate-300 rounded-full transition-colors duration-150;
 }
-.dark ::-webkit-scrollbar-thumb {
-  @apply bg-slate-700;
-}
+
 ::-webkit-scrollbar-thumb:hover {
   @apply bg-slate-400;
 }
@@ -80,8 +71,4 @@
     linear-gradient(to right, rgba(0,0,0,0.03) 1px, transparent 1px),
     linear-gradient(to bottom, rgba(0,0,0,0.03) 1px, transparent 1px);
 }
-.dark .bg-grid {
-  background-image: 
-    linear-gradient(to right, rgba(255,255,255,0.02) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(255,255,255,0.02) 1px, transparent 1px);
-}
+

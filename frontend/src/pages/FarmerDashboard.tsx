@@ -2,16 +2,17 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { motion, AnimatePresence } from 'framer-motion';
-import confetti from 'canvas-confetti';
 import { 
-  Sprout, FileText, Landmark, LogOut, Languages, Calendar, 
-  Mic, MicOff, Camera, RefreshCw, CheckCircle, 
-  TrendingUp, ChevronRight, X, Clock, AlertTriangle, Bell 
+  Sprout, FileText, TrendingUp, Landmark, ChevronRight, Bell, Languages, 
+  LogOut, Search, Camera, Calendar, Clock, AlertTriangle, 
+  CheckCircle, ArrowLeft, RefreshCw, X, Mic, AlertCircle, ShoppingBag, MapPin
 } from 'lucide-react';
+import confetti from 'canvas-confetti';
 
 interface Registration {
   id: number;
   registration_number: string;
+  farmer_id: number;
   crop_name: string;
   crop_stage: string;
   expected_harvest_month: string;
@@ -24,24 +25,86 @@ interface Registration {
   phone_number: string;
   status: string;
   created_at: string;
+  images: any[];
+  // Produce fields
+  produce_category?: string;
+  quantity_unit?: string;
+  pin_code?: string;
+  harvest_date?: string;
+  produce_ready_status?: string;
 }
 
+interface ProcurementTimelineStep {
+  step: string;
+  completed: boolean;
+  current: boolean;
+}
 
+interface ProcurementDetail {
+  id: number;
+  procurement_number: string;
+  registration_number: string;
+  crop_name: string;
+  product: string;
+  quantity: number;
+  centre_name: string;
+  status: string;
+  officer_remarks: string | null;
+  payment_status: string;
+  slot_date: string;
+  slot_time: string;
+  total_amount: number;
+  transaction_reference: string | null;
+  expected_payment_date: string | null;
+  payment_date: string | null;
+  timeline: ProcurementTimelineStep[];
+  created_at: string;
+}
+
+const mspProduceItems = [
+  { name: 'Paddy', category: 'Grains', price: '₹2,183', unit: 'per Quintal', type: 'msp', info: 'Primary kharif cereal. Government guaranteed MSP.', image: '🌾' },
+  { name: 'Wheat', category: 'Grains', price: '₹2,275', unit: 'per Quintal', type: 'msp', info: 'Rabi staple crop. Government guaranteed MSP.', image: '🍞' },
+  { name: 'Maize', category: 'Grains', price: '₹2,090', unit: 'per Quintal', type: 'msp', info: 'Coarse cereal used for feed & food. Government MSP.', image: '🌽' },
+  { name: 'Jowar', category: 'Grains', price: '₹3,180', unit: 'per Quintal', type: 'msp', info: 'Sorghum millet, highly drought resistant. Government MSP.', image: '🌾' },
+  { name: 'Bajra', category: 'Grains', price: '₹2,500', unit: 'per Quintal', type: 'msp', info: 'Pearl millet staple. Government MSP.', image: '🌾' },
+  { name: 'Ragi', category: 'Grains', price: '₹3,846', unit: 'per Quintal', type: 'msp', info: 'Finger millet, high calcium. Government MSP.', image: '🌾' },
+  { name: 'Gram', category: 'Pulses', price: '₹5,440', unit: 'per Quintal', type: 'msp', info: 'Chickpea rabi pulse. Government MSP.', image: '🍲' },
+  { name: 'Tur', category: 'Pulses', price: '₹7,000', unit: 'per Quintal', type: 'msp', info: 'Pigeon pea kharif pulse. Government MSP.', image: '🍲' },
+  { name: 'Moong', category: 'Pulses', price: '₹8,558', unit: 'per Quintal', type: 'msp', info: 'Green gram pulse. Government MSP.', image: '🍲' },
+  { name: 'Urad', category: 'Pulses', price: '₹6,950', unit: 'per Quintal', type: 'msp', info: 'Black gram pulse. Government MSP.', image: '🍲' },
+  { name: 'Groundnut', category: 'Oilseeds', price: '₹6,377', unit: 'per Quintal', type: 'msp', info: 'Peanut oilseed crop. Government MSP.', image: '🥜' },
+  { name: 'Sunflower Seed', category: 'Oilseeds', price: '₹6,760', unit: 'per Quintal', type: 'msp', info: 'High oil yield seed crop. Government MSP.', image: '🌻' },
+  { name: 'Soybean', category: 'Oilseeds', price: '₹4,600', unit: 'per Quintal', type: 'msp', info: 'Yellow soybean oilseed. Government MSP.', image: '🌱' },
+  { name: 'Sesamum', category: 'Oilseeds', price: '₹8,635', unit: 'per Quintal', type: 'msp', info: 'Sesame til crop. Government MSP.', image: '🌱' },
+  { name: 'Cotton', category: 'Other', price: '₹6,620', unit: 'per Quintal', type: 'msp', info: 'Fiber cash crop. Government MSP.', image: '☁️' },
+  { name: 'Tomato', category: 'Vegetables', price: '₹1,800', unit: 'per Quintal', type: 'market', info: 'Daily vegetable produce. Market Price / Demo Data.', image: '🍅' },
+  { name: 'Onion', category: 'Vegetables', price: '₹2,200', unit: 'per Quintal', type: 'market', info: 'Staple kitchen vegetable. Market Price / Demo Data.', image: '🧅' },
+  { name: 'Potato', category: 'Vegetables', price: '₹1,500', unit: 'per Quintal', type: 'market', info: 'Tubers cash crop. Market Price / Demo Data.', image: '🥔' },
+  { name: 'Chilli', category: 'Vegetables', price: '₹19,000', unit: 'per Quintal', type: 'market', info: 'Red spice crop. Market Price / Demo Data.', image: '🌶️' },
+  { name: 'Turmeric', category: 'Other', price: '₹12,500', unit: 'per Quintal', type: 'market', info: 'Spices cash crop. Market Price / Demo Data.', image: '💛' }
+];
 
 const FarmerDashboard: React.FC = () => {
   const { logout, apiFetch, name } = useAuth();
   const { t, language, setLanguage } = useLanguage();
 
   // Navigation / Tab states
-  const [activeTab, setActiveTab] = useState<'overview' | 'register' | 'msp'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'register' | 'register-produce' | 'msp' | 'procurement'>('overview');
   
   // Dashboard Data states
   const [registrations, setRegistrations] = useState<Registration[]>([]);
   const [selectedReg, setSelectedReg] = useState<Registration | null>(null);
-  const [mspRates, setMspRates] = useState<any[]>([]);
   const [notifications, setNotifications] = useState<any[]>([]);
   const [loadingRegs, setLoadingRegs] = useState(true);
+
+  // Procurement states
+  const [procurements, setProcurements] = useState<ProcurementDetail[]>([]);
+  const [loadingProcurements, setLoadingProcurements] = useState(false);
   
+  // MSP Search & Filter states
+  const [mspSearchQuery, setMspSearchQuery] = useState('');
+  const [mspCategoryFilter, setMspCategoryFilter] = useState('All');
+
   // Crop Registration Form states
   const [formData, setFormData] = useState({
     crop_name: 'Paddy',
@@ -54,6 +117,23 @@ const FarmerDashboard: React.FC = () => {
     mandal: 'Hanamkonda',
     village: 'Madikonda',
     phone_number: ''
+  });
+
+  // Produce Registration Form states
+  const [produceFormData, setProduceFormData] = useState({
+    farmer_name: name || '',
+    phone_number: '',
+    produce_name: 'Paddy',
+    produce_category: 'Grains',
+    expected_quantity: '',
+    quantity_unit: 'Quintals',
+    state: 'Telangana',
+    district: 'Warangal',
+    mandal: 'Hanamkonda',
+    village: 'Madikonda',
+    pin_code: '',
+    harvest_date: new Date().toISOString().split('T')[0],
+    produce_ready_status: 'Ready'
   });
   
   // Camera Simulator states
@@ -73,8 +153,6 @@ const FarmerDashboard: React.FC = () => {
   const [bookingOpen, setBookingOpen] = useState(false);
   const [slotDate, setSlotDate] = useState('');
   const [slotTime, setSlotTime] = useState('10:00 AM');
-  
-
 
   // Voice Assistant states
   const [voiceActive, setVoiceActive] = useState(false);
@@ -82,11 +160,8 @@ const FarmerDashboard: React.FC = () => {
   const [voiceReply, setVoiceReply] = useState('');
   const [recognition, setRecognition] = useState<any>(null);
 
-
-
   useEffect(() => {
     fetchDashboardData();
-    fetchMspRates();
     
     // Load Voice Recognition
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
@@ -95,7 +170,7 @@ const FarmerDashboard: React.FC = () => {
       rec.continuous = false;
       rec.interimResults = false;
       
-      // Map speech language based on app language
+      // Map speech language based on app language preference
       rec.lang = language === 'te' ? 'te-IN' : language === 'hi' ? 'hi-IN' : 'en-IN';
       
       rec.onstart = () => {
@@ -140,12 +215,15 @@ const FarmerDashboard: React.FC = () => {
     }
   };
 
-  const fetchMspRates = async () => {
+  const fetchProcurements = async () => {
     try {
-      const msps = await apiFetch('/api/msp');
-      setMspRates(msps);
+      setLoadingProcurements(true);
+      const data = await apiFetch('/api/procurements/my');
+      setProcurements(data);
     } catch (err) {
-      console.error('Error loading MSP:', err);
+      console.error('Error loading procurements:', err);
+    } finally {
+      setLoadingProcurements(false);
     }
   };
 
@@ -195,6 +273,45 @@ const FarmerDashboard: React.FC = () => {
       });
     } catch (err: any) {
       alert(err.message || 'Registration failed.');
+    }
+  };
+
+  // Harvested Produce Registration Form Submit
+  const handleProduceSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const res = await apiFetch('/api/crops/register-produce', {
+        method: 'POST',
+        body: JSON.stringify({
+          ...produceFormData,
+          expected_quantity: parseFloat(produceFormData.expected_quantity)
+        })
+      });
+      
+      confetti({ particleCount: 80, spread: 60, origin: { y: 0.8 } });
+      alert('Produce Registered Successfully!');
+      fetchDashboardData();
+      
+      // Select the newly registered produce to allow camera / assessment flow directly
+      handleSelectReg(res);
+      setActiveTab('overview');
+      setProduceFormData({
+        farmer_name: name || '',
+        phone_number: '',
+        produce_name: 'Paddy',
+        produce_category: 'Grains',
+        expected_quantity: '',
+        quantity_unit: 'Quintals',
+        state: 'Telangana',
+        district: 'Warangal',
+        mandal: 'Hanamkonda',
+        village: 'Madikonda',
+        pin_code: '',
+        harvest_date: new Date().toISOString().split('T')[0],
+        produce_ready_status: 'Ready'
+      });
+    } catch (err: any) {
+      alert(err.message || 'Produce registration failed.');
     }
   };
 
@@ -305,7 +422,6 @@ const FarmerDashboard: React.FC = () => {
     // Call backend API to save image
     if (selectedReg) {
       try {
-        // Convert base64 data to Blob
         const blob = await (await fetch(imageSrc)).blob();
         
         const fd = new FormData();
@@ -324,7 +440,6 @@ const FarmerDashboard: React.FC = () => {
         // Trigger updates in registration timeline
         fetchDashboardData();
         if (selectedReg) {
-          // Keep selection details updated
           const list = await apiFetch('/api/crops/my-registrations');
           const current = list.find((r: any) => r.id === selectedReg.id);
           if (current) setSelectedReg(current);
@@ -383,62 +498,92 @@ const FarmerDashboard: React.FC = () => {
     }
   };
 
-  // VOICE ASSISTANT PROCESSOR
+  // VOICE ASSISTANT PROCESSOR (FLOATING & MULTILINGUAL)
   const startListening = () => {
     if (recognition) {
       recognition.start();
     } else {
-      alert('Speech synthesis/recognition is not fully supported in this browser tab.');
+      alert('Speech recognition is not fully supported in this browser.');
     }
   };
 
   const processVoiceCommand = (text: string) => {
-    const query = text.toLowerCase();
+    const query = text.toLowerCase().trim().replace(/[.,/#!$%^&*;:{}=\-_`~()?]/g,"");
     let reply = '';
     let voiceLang = 'en-US';
 
-    // Matches languages
-    if (language === 'te' || query.includes('డబ్బులు') || query.includes('పైసలు') || query.includes('పేమెంట్') || query.includes('నా డబ్బులు')) {
-      // Telugu Response
+    if (language === 'te') {
       voiceLang = 'te-IN';
-      const completed = registrations.find(r => r.status === 'Payment Completed');
-      if (completed) {
-        reply = `వరి నమోదు ${completed.registration_number} కొరకు మీ ₹${Math.round(completed.expected_quantity * 2183)} ల పేమెంట్ విజయవంతంగా పూర్తయింది. ట్రాన్సాక్షన్ ఐడి ఖాతాకు పంపబడింది.`;
+      if (query.includes('పంట నమోదు') || query.includes('క్రాప్ రిజిస్ట్రేషన్') || query.includes('నమోదు')) {
+        setActiveTab('register');
+        setSelectedReg(null);
+        reply = 'పంట ముందస్తు నమోదు పేజీని తెరుస్తున్నాను.';
+      } else if (query.includes('పంట విక్రయం') || query.includes('ప్రొడ్యూస్ రిజిస్ట్రేషన్') || query.includes('పంట అమ్మకం') || query.includes('విక్రయం')) {
+        setActiveTab('register-produce');
+        setSelectedReg(null);
+        reply = 'పంట విక్రయ నమోదు పేజీని తెరుస్తున్నాను.';
+      } else if (query.includes('ధరలు') || query.includes('మద్దతు ధర') || query.includes('రేట్లు') || query.includes('ఎమ్ ఎస్ పి') || query.includes('ఎంఎస్పి')) {
+        setActiveTab('msp');
+        reply = 'కనీస మద్దతు ధర వివరాల పేజీని తెరుస్తున్నాను.';
+      } else if (query.includes('చెల్లింపు') || query.includes('డబ్బులు') || query.includes('ట్రాకింగ్') || query.includes('పేమెంట్') || query.includes('స్టేటస్')) {
+        setActiveTab('procurement');
+        fetchProcurements();
+        reply = 'చెల్లింపు మరియు కొనుగోలు ట్రాకింగ్ పేజీని తెరుస్తున్నాను.';
+      } else if (query.includes('డాష్‌బోర్డ్') || query.includes('హోమ్') || query.includes('మొదటి పేజీ')) {
+        setActiveTab('overview');
+        setSelectedReg(null);
+        reply = 'డాష్‌బోర్డ్ పేజీని తెరుస్తున్నాను.';
       } else {
-        const pending = registrations[0];
-        if (pending) {
-          reply = `మీ పంట నమోదు ${pending.registration_number} ప్రస్తుతం ${pending.status} స్థితిలో ఉంది. త్వరలోనే తదుపరి ప్రక్రియ ప్రారంభమవుతుంది.`;
-        } else {
-          reply = "మీరు ఇంకా ఎటువంటి పంట నమోదు చేసుకోలేదు. దయచేసి పంట నమోదు బటన్ నొక్కి వివరాలు నమోదు చేయండి.";
-        }
+        reply = 'క్షమించండి, నాకు అర్థం కాలేదు. దయచేసి మళ్లీ చెప్పండి.';
       }
-    } else if (language === 'hi' || query.includes('पैसा') || query.includes('भुगतान') || query.includes('स्थिति') || query.includes('पैसे')) {
-      // Hindi Response
+    } else if (language === 'hi') {
       voiceLang = 'hi-IN';
-      const completed = registrations.find(r => r.status === 'Payment Completed');
-      if (completed) {
-        reply = `धान पंजीकरण ${completed.registration_number} के लिए आपका ₹${Math.round(completed.expected_quantity * 2183)} का भुगतान पूरा हो गया है।`;
+      if (query.includes('फसल पंजीकरण') || query.includes('फसल रजिस्टर') || query.includes('पंजीकरण')) {
+        setActiveTab('register');
+        setSelectedReg(null);
+        reply = 'फसल पंजीकरण पृष्ठ खोल रहा हूँ।';
+      } else if (query.includes('फसल बेचें') || query.includes('उत्पाद पंजीकरण') || query.includes('बेचना') || query.includes('फसल बेचना')) {
+        setActiveTab('register-produce');
+        setSelectedReg(null);
+        reply = 'फसल उत्पाद पंजीकरण पृष्ठ खोल रहा हूँ।';
+      } else if (query.includes('एमएसपी') || query.includes('मूल्य') || query.includes('दाम देखें') || query.includes('रेट')) {
+        setActiveTab('msp');
+        reply = 'न्यूनतम समर्थन मूल्य विवरण पृष्ठ खोल रहा हूँ।';
+      } else if (query.includes('भुगतान') || query.includes('पैसे') || query.includes('स्थिति देखें') || query.includes('पेमेंट')) {
+        setActiveTab('procurement');
+        fetchProcurements();
+        reply = 'भुगतान स्थिति और खरीद ट्रैकिंग पृष्ठ खोल रहा हूँ।';
+      } else if (query.includes('डैशबोर्ड') || query.includes('होम') || query.includes('मुख्य पृष्ठ')) {
+        setActiveTab('overview');
+        setSelectedReg(null);
+        reply = 'डैशबोर्ड खोल रहा हूँ।';
       } else {
-        const pending = registrations[0];
-        if (pending) {
-          reply = `आपकी फसल पंजीकरण संख्या ${pending.registration_number} की स्थिति: ${pending.status} है।`;
-        } else {
-          reply = "आपके पास कोई सक्रिय पंजीकरण नहीं है। कृपया नया पंजीकरण दर्ज करें।";
-        }
+        reply = 'माफ़ कीजिए, मैं समझ नहीं पाया। कृपया फिर से बोलें।';
       }
     } else {
-      // English Response
+      // English
       voiceLang = 'en-US';
-      const completed = registrations.find(r => r.status === 'Payment Completed');
-      if (completed) {
-        reply = `Your payment of Rs. ${Math.round(completed.expected_quantity * 2183)} for registration ${completed.registration_number} has been completed successfully.`;
+      if (query.includes('register crop') || query.includes('open crop registration')) {
+        setActiveTab('register');
+        setSelectedReg(null);
+        reply = 'Opening crop registration page.';
+      } else if (query.includes('register produce') || query.includes('open produce registration') || query.includes('sell produce')) {
+        setActiveTab('register-produce');
+        setSelectedReg(null);
+        reply = 'Opening produce registration page.';
+      } else if (query.includes('open msp') || query.includes('check msp') || query.includes('msp information')) {
+        setActiveTab('msp');
+        reply = 'Opening Minimum Support Price page.';
+      } else if (query.includes('track payment') || query.includes('payment status') || query.includes('open my procurement') || query.includes('procurement')) {
+        setActiveTab('procurement');
+        fetchProcurements();
+        reply = 'Opening procurement and payment tracking page.';
+      } else if (query.includes('go to dashboard') || query.includes('go home') || query.includes('dashboard')) {
+        setActiveTab('overview');
+        setSelectedReg(null);
+        reply = 'Navigating back to main dashboard.';
       } else {
-        const pending = registrations[0];
-        if (pending) {
-          reply = `Your crop registration ${pending.registration_number} is currently in state: ${pending.status}.`;
-        } else {
-          reply = "We could not find any active crop registrations. Please submit a new pre-harvest form.";
-        }
+        reply = 'Sorry, I did not understand. Please try again.';
       }
     }
 
@@ -474,27 +619,34 @@ const FarmerDashboard: React.FC = () => {
     return idx === -1 ? 0 : idx;
   };
 
+  // Filter crops dataset
+  const filteredMspItems = mspProduceItems.filter(item => {
+    const matchesSearch = item.name.toLowerCase().includes(mspSearchQuery.toLowerCase());
+    const matchesCategory = mspCategoryFilter === 'All' || item.category === mspCategoryFilter;
+    return matchesSearch && matchesCategory;
+  });
+
   return (
-    <div className="min-h-screen bg-slate-100 text-slate-800 dark:bg-slate-950 dark:text-slate-100 flex flex-col font-sans transition-colors">
+    <div className="min-h-screen bg-slate-50 text-slate-800 flex flex-col font-sans transition-colors relative pb-20">
       {/* Dashboard Top bar */}
-      <header className="sticky top-0 z-40 bg-white/80 dark:bg-slate-900/80 border-b border-slate-200 dark:border-slate-800 backdrop-blur-md px-6 py-4 flex items-center justify-between">
+      <header className="sticky top-0 z-40 bg-white/95 border-b border-slate-200 backdrop-blur-md px-6 py-4 flex items-center justify-between shadow-sm">
         <div className="flex items-center gap-3">
           <div className="h-10 w-10 bg-emerald-600 rounded-xl flex items-center justify-center text-white shadow">
             <Sprout className="h-6 w-6" />
           </div>
           <div>
-            <h1 className="text-lg font-extrabold tracking-tight">Farmer Portal</h1>
-            <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">{t('app_title')}</p>
+            <h1 className="text-lg font-extrabold tracking-tight text-slate-900">Farmer Portal</h1>
+            <p className="text-[10px] text-emerald-650 font-bold uppercase tracking-wider">{t('app_title')}</p>
           </div>
         </div>
 
         <div className="flex items-center gap-4">
-          <span className="text-xs font-semibold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 px-3 py-1.5 rounded-lg border border-emerald-500/10">
+          <span className="text-xs font-semibold bg-emerald-50 text-emerald-700 px-3 py-1.5 rounded-lg border border-emerald-500/10 hidden sm:inline-block">
             Welcome, <span className="font-bold">{name}</span>
           </span>
 
           {/* Notification Bell Badge */}
-          <div className="relative p-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-slate-850 dark:text-slate-350 transition-colors">
+          <div className="relative p-1.5 rounded-lg bg-slate-100 text-slate-550 hover:bg-slate-200 transition-colors cursor-pointer">
             <Bell className="h-4 w-4" />
             {notifications.filter(n => !n.is_read).length > 0 && (
               <span className="absolute -top-1 -right-1 h-3.5 w-3.5 bg-red-500 rounded-full text-[8px] font-bold text-white flex items-center justify-center">
@@ -505,16 +657,16 @@ const FarmerDashboard: React.FC = () => {
 
           {/* Languages Selector */}
           <div className="relative group">
-            <button className="flex items-center gap-1 bg-slate-100 border dark:bg-slate-800 px-2 py-1 rounded text-xs">
+            <button className="flex items-center gap-1 bg-slate-100 border border-slate-200 px-2.5 py-1.5 rounded-lg text-xs font-bold hover:bg-slate-200 cursor-pointer">
               <Languages className="h-3.5 w-3.5 text-emerald-600" />
               <span className="uppercase">{language}</span>
             </button>
-            <div className="absolute right-0 mt-1 hidden w-28 bg-white dark:bg-slate-900 border p-1 rounded shadow-lg group-hover:block">
+            <div className="absolute right-0 mt-1 hidden w-28 bg-white border border-slate-200 p-1 rounded-lg shadow-lg group-hover:block z-50">
               {['en', 'te', 'hi'].map((l) => (
                 <button
                   key={l}
                   onClick={() => setLanguage(l as any)}
-                  className="w-full text-left text-xs px-2 py-1.5 rounded hover:bg-slate-100 dark:hover:bg-slate-800 uppercase"
+                  className="w-full text-left px-3 py-2 text-xs font-bold hover:bg-slate-50 text-slate-700 rounded-md"
                 >
                   {l === 'en' ? 'English' : l === 'te' ? 'తెలుగు' : 'हिंदी'}
                 </button>
@@ -522,9 +674,9 @@ const FarmerDashboard: React.FC = () => {
             </div>
           </div>
 
-          <button 
+          <button
             onClick={logout}
-            className="flex items-center gap-1 bg-red-50 text-red-600 border border-red-200 dark:bg-red-950/30 dark:border-red-950 dark:text-red-400 px-3 py-1.5 rounded-lg text-xs font-bold"
+            className="flex items-center gap-1 bg-red-50 text-red-650 border border-red-200 px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-red-100 cursor-pointer"
           >
             <LogOut className="h-4.5 w-4.5" />
             Logout
@@ -536,26 +688,26 @@ const FarmerDashboard: React.FC = () => {
       <main className="flex-1 max-w-7xl w-full mx-auto p-6 grid gap-6 md:grid-cols-12">
         {/* Left column navigation cards */}
         <div className="md:col-span-3 space-y-4">
-          <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl shadow-sm border border-slate-200/60 dark:border-slate-800">
-            <div className="space-y-1">
-              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Aadhaar Verified ID</p>
-              <p className="text-xs font-mono font-bold text-slate-600 dark:text-slate-300">UIDAI: *******8940</p>
-            </div>
-          </div>
-
           <div className="space-y-2">
             {[
-              { id: 'overview', label: 'My Crop registrations', icon: FileText },
-              { id: 'register', label: t('register_crop'), icon: Sprout },
-              { id: 'msp', label: t('msp_info'), icon: TrendingUp }
+              { id: 'overview', label: 'My Registrations', icon: FileText },
+              { id: 'register', label: 'Register Crop', icon: Sprout },
+              { id: 'register-produce', label: 'Register Produce', icon: ShoppingBag },
+              { id: 'msp', label: t('msp_info'), icon: TrendingUp },
+              { id: 'procurement', label: t('my_procurement'), icon: Landmark }
             ].map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => {
                   setActiveTab(tab.id as any);
                   setSelectedReg(null);
+                  if (tab.id === 'procurement') fetchProcurements();
                 }}
-                className={`w-full flex items-center justify-between px-4 py-3 rounded-xl border text-xs font-bold transition-all ${activeTab === tab.id ? 'bg-emerald-600 border-emerald-600 text-white shadow' : 'bg-white border-slate-200 dark:bg-slate-900 dark:border-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-850'}`}
+                className={`w-full flex items-center justify-between px-4 py-3 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
+                  activeTab === tab.id 
+                    ? 'bg-emerald-600 border-emerald-650 text-white shadow-md' 
+                    : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-100'
+                }`}
               >
                 <div className="flex items-center gap-3">
                   <tab.icon className="h-5 w-5" />
@@ -564,54 +716,6 @@ const FarmerDashboard: React.FC = () => {
                 <ChevronRight className="h-4 w-4" />
               </button>
             ))}
-          </div>
-
-          {/* VOICE ASSISTANT WIDGET */}
-          <div className="bg-gradient-to-br from-emerald-800 to-emerald-950 p-5 rounded-3xl shadow-xl text-white relative overflow-hidden">
-            <div className="absolute right-0 bottom-0 bg-white/5 h-20 w-20 rounded-full blur-xl pointer-events-none" />
-            <h4 className="text-xs uppercase font-extrabold tracking-wider text-emerald-300 flex items-center gap-2 mb-2">
-              <Mic className="h-4.5 w-4.5" />
-              Accessibility Speech
-            </h4>
-            <p className="text-[11px] leading-relaxed text-emerald-100/90 mb-4">
-              Click microphone and ask about your payment or status in English, తెలుగు or हिंदी.
-            </p>
-
-            <div className="flex flex-col items-center gap-3">
-              <button
-                type="button"
-                onClick={startListening}
-                className={`h-14 w-14 rounded-full flex items-center justify-center shadow-lg transition-transform hover:scale-105 active:scale-95 ${voiceActive ? 'bg-red-500 animate-pulse' : 'bg-emerald-600 border border-emerald-500'}`}
-              >
-                {voiceActive ? <MicOff className="h-6 w-6 text-white" /> : <Mic className="h-6 w-6 text-white" />}
-              </button>
-
-              {voiceActive && (
-                <div className="flex gap-1 items-center h-8 my-1">
-                  <div className="wave-bar" />
-                  <div className="wave-bar" />
-                  <div className="wave-bar" />
-                  <div className="wave-bar" />
-                  <div className="wave-bar" />
-                  <div className="wave-bar" />
-                  <div className="wave-bar" />
-                </div>
-              )}
-
-              {voiceText && (
-                <div className="w-full text-center">
-                  <p className="text-[10px] text-emerald-300 font-bold uppercase">Spoken Query:</p>
-                  <p className="text-xs bg-slate-950/40 p-2 rounded-lg font-semibold mt-1">"{voiceText}"</p>
-                </div>
-              )}
-
-              {voiceReply && (
-                <div className="w-full bg-slate-950/60 p-3 rounded-xl border border-emerald-500/20">
-                  <p className="text-[10px] text-gov-gold-400 font-bold uppercase">Voice Assistant Reply:</p>
-                  <p className="text-xs text-slate-100 mt-1 leading-relaxed">{voiceReply}</p>
-                </div>
-              )}
-            </div>
           </div>
         </div>
 
@@ -632,124 +736,134 @@ const FarmerDashboard: React.FC = () => {
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                       <button
                         onClick={() => setActiveTab('register')}
-                        className="bg-white dark:bg-slate-900 border border-emerald-500/10 hover:border-emerald-500/35 p-5 rounded-2xl shadow-sm text-left transition-all hover:scale-[1.02] flex flex-col justify-between h-28 group"
+                        className="bg-white border border-emerald-100 hover:border-emerald-300 p-5 rounded-2xl shadow-sm text-left transition-all hover:scale-[1.02] flex flex-col justify-between h-28 group cursor-pointer"
                       >
-                        <div className="h-9 w-9 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 flex items-center justify-center group-hover:bg-emerald-600 group-hover:text-white transition-all">
+                        <div className="h-9 w-9 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center group-hover:bg-emerald-600 group-hover:text-white transition-all">
                           <Sprout className="h-5 w-5" />
                         </div>
-                        <span className="text-xs font-bold text-slate-800 dark:text-slate-200">{t('register_crop')}</span>
+                        <span className="text-xs font-bold text-slate-800">Register Crop</span>
                       </button>
 
                       <button
-                        onClick={() => { setActiveTab('overview'); setSelectedReg(null); }}
-                        className="bg-white dark:bg-slate-900 border border-blue-500/10 hover:border-blue-500/35 p-5 rounded-2xl shadow-sm text-left transition-all hover:scale-[1.02] flex flex-col justify-between h-28 group"
+                        onClick={() => setActiveTab('register-produce')}
+                        className="bg-white border border-yellow-100 hover:border-yellow-300 p-5 rounded-2xl shadow-sm text-left transition-all hover:scale-[1.02] flex flex-col justify-between h-28 group cursor-pointer"
                       >
-                        <div className="h-9 w-9 rounded-xl bg-blue-50 dark:bg-blue-950/40 text-blue-650 flex items-center justify-center group-hover:bg-blue-600 group-hover:text-white transition-all">
-                          <FileText className="h-5 w-5" />
+                        <div className="h-9 w-9 rounded-xl bg-yellow-50 text-yellow-600 flex items-center justify-center group-hover:bg-yellow-600 group-hover:text-white transition-all">
+                          <ShoppingBag className="h-5 w-5" />
                         </div>
-                        <span className="text-xs font-bold text-slate-800 dark:text-slate-200">{t('my_procurement')}</span>
+                        <span className="text-xs font-bold text-slate-800">Register Produce</span>
                       </button>
 
                       <button
                         onClick={() => setActiveTab('msp')}
-                        className="bg-white dark:bg-slate-900 border border-amber-500/10 hover:border-amber-500/35 p-5 rounded-2xl shadow-sm text-left transition-all hover:scale-[1.02] flex flex-col justify-between h-28 group"
+                        className="bg-white border border-amber-100 hover:border-amber-300 p-5 rounded-2xl shadow-sm text-left transition-all hover:scale-[1.02] flex flex-col justify-between h-28 group cursor-pointer"
                       >
-                        <div className="h-9 w-9 rounded-xl bg-amber-50 dark:bg-amber-950/40 text-amber-650 flex items-center justify-center group-hover:bg-amber-600 group-hover:text-white transition-all">
+                        <div className="h-9 w-9 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center group-hover:bg-amber-600 group-hover:text-white transition-all">
                           <TrendingUp className="h-5 w-5" />
                         </div>
-                        <span className="text-xs font-bold text-slate-800 dark:text-slate-200">{t('msp_info')}</span>
+                        <span className="text-xs font-bold text-slate-800">{t('msp_info')}</span>
                       </button>
 
                       <button
-                        onClick={startListening}
-                        className="bg-white dark:bg-slate-900 border border-purple-500/10 hover:border-purple-500/35 p-5 rounded-2xl shadow-sm text-left transition-all hover:scale-[1.02] flex flex-col justify-between h-28 group"
+                        onClick={() => { setActiveTab('procurement'); fetchProcurements(); }}
+                        className="bg-white border border-blue-100 hover:border-blue-300 p-5 rounded-2xl shadow-sm text-left transition-all hover:scale-[1.02] flex flex-col justify-between h-28 group cursor-pointer"
                       >
-                        <div className="h-9 w-9 rounded-xl bg-purple-50 dark:bg-purple-950/40 text-purple-650 flex items-center justify-center group-hover:bg-purple-600 group-hover:text-white transition-all">
-                          <Mic className="h-5 w-5" />
+                        <div className="h-9 w-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center group-hover:bg-blue-600 group-hover:text-white transition-all">
+                          <FileText className="h-5 w-5" />
                         </div>
-                        <span className="text-xs font-bold text-slate-800 dark:text-slate-200">{t('voice_assistant')}</span>
+                        <span className="text-xs font-bold text-slate-800">{t('my_procurement')}</span>
                       </button>
                     </div>
 
-                    {/* Weather & Govt Updates Grid */}
+                    {/* Weather & Govt Bulletins Grid */}
                     <div className="grid gap-6 md:grid-cols-2">
                       {/* Weather widget */}
-                      <div className="bg-gradient-to-br from-blue-500 to-indigo-600 dark:from-blue-900 dark:to-indigo-950 p-6 rounded-3xl text-white shadow-md flex flex-col justify-between relative overflow-hidden group">
+                      <div className="bg-gradient-to-br from-emerald-600 to-emerald-800 p-6 rounded-3xl text-white shadow-md flex flex-col justify-between relative overflow-hidden group">
                         <div className="absolute right-0 bottom-0 bg-white/5 h-24 w-24 rounded-full blur-xl pointer-events-none" />
                         <div className="flex justify-between items-start">
                           <div>
-                            <h4 className="text-xs uppercase font-extrabold tracking-wider text-blue-200">{t('weather_info')}</h4>
+                            <h4 className="text-xs uppercase font-extrabold tracking-wider text-emerald-100">{t('weather_info')}</h4>
                             <p className="text-2xl font-extrabold mt-1">32°C • Sunny</p>
                           </div>
                           <span className="text-4xl">☀️</span>
                         </div>
-                        <div className="mt-6 pt-4 border-t border-white/10 text-[11px] leading-relaxed text-blue-100 font-medium">
-                          <p><b>Agricultural Advisory:</b> Low humidity (38%) is ideal for sun-drying harvested Paddy. Protect cut crops from brief light rain expected in mandals near Warangal next Tuesday.</p>
+                        <div className="mt-6 pt-4 border-t border-white/15 text-[11px] leading-relaxed text-emerald-50 font-medium">
+                          <p><b>Agricultural Advisory:</b> Low humidity (38%) is ideal for harvested Paddy drying. Keep your harvest covered in case of brief light rains expected next Tuesday.</p>
                         </div>
                       </div>
 
                       {/* Govt bulletins */}
-                      <div className="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 p-6 rounded-3xl shadow-sm flex flex-col justify-between">
+                      <div className="bg-white border border-slate-200 p-6 rounded-3xl shadow-sm flex flex-col justify-between">
                         <div>
-                          <h4 className="text-xs uppercase font-extrabold tracking-wider text-slate-400 dark:text-slate-500 flex items-center gap-2">
-                            <span className="h-2 w-2 bg-emerald-500 rounded-full animate-pulse" />
+                          <h4 className="text-xs uppercase font-extrabold tracking-wider text-slate-500 flex items-center gap-2">
+                            <span className="h-2 w-2 bg-emerald-550 rounded-full animate-pulse" />
                             {t('gov_updates')}
                           </h4>
-                          <ul className="mt-4 space-y-3.5 text-xs leading-relaxed font-semibold">
+                          <ul className="mt-4 space-y-3.5 text-xs leading-relaxed font-semibold text-slate-650">
                             <li className="flex items-start gap-2">
-                              <span className="text-emerald-500 font-extrabold shrink-0">•</span>
-                              <p className="text-slate-600 dark:text-slate-350">Subsidized Paddy seeds distribution starting July 20 at local PACS centres.</p>
+                              <span className="text-emerald-600 font-extrabold shrink-0">•</span>
+                              <p>Subsidized seeds distribution starting July 20 at local PACS centres.</p>
                             </li>
                             <li className="flex items-start gap-2">
-                              <span className="text-emerald-500 font-extrabold shrink-0">•</span>
-                              <p className="text-slate-600 dark:text-slate-300">Kharif Paddy MSP revised to ₹2,183/Qtl for Grade A. Book slots early.</p>
+                              <span className="text-emerald-600 font-extrabold shrink-0">•</span>
+                              <p>MSP procurement centers in Warangal now accept direct harvested registrations.</p>
                             </li>
                           </ul>
                         </div>
                       </div>
                     </div>
 
-                    {/* REGISTRATIONS QUEUE LIST */}
-                    <div className="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 rounded-3xl p-6 shadow-sm">
-                      <h3 className="text-base font-bold mb-4 flex items-center gap-2">
-                        <FileText className="h-5 w-5 text-emerald-600" />
-                        My Crop Registrations
-                      </h3>
-
+                    {/* Active registrations listing */}
+                    <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm">
+                      <h3 className="text-sm font-bold text-slate-800 mb-4">My Crop & Produce Registrations</h3>
+                      
                       {loadingRegs ? (
                         <div className="space-y-3">
-                          <div className="h-14 bg-slate-100 dark:bg-slate-800 animate-pulse rounded-xl" />
-                          <div className="h-14 bg-slate-100 dark:bg-slate-800 animate-pulse rounded-xl" />
+                          <div className="h-14 bg-slate-100 animate-pulse rounded-xl" />
+                          <div className="h-14 bg-slate-100 animate-pulse rounded-xl" />
                         </div>
                       ) : registrations.length === 0 ? (
-                        <div className="text-center py-12">
-                          <Sprout className="h-12 w-12 text-slate-300 dark:text-slate-700 mx-auto mb-3" />
-                          <p className="text-sm font-semibold text-slate-400">No registrations found. Register your pre-harvest crop to start.</p>
+                        <div className="text-center py-12 text-slate-400">
+                          <FileText className="h-12 w-12 mx-auto mb-3 opacity-30 text-slate-500" />
+                          <p className="text-xs font-bold">No active registrations found.</p>
+                          <p className="text-[10px] text-slate-400 mt-1">Submit crop pre-harvest or harvested produce form to get started.</p>
                         </div>
                       ) : (
-                        <div className="divide-y divide-slate-100 dark:divide-slate-800">
+                        <div className="space-y-3">
                           {registrations.map((reg) => (
                             <div 
-                              key={reg.id} 
+                              key={reg.id}
                               onClick={() => handleSelectReg(reg)}
-                              className="flex justify-between items-center py-4 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-850 px-2 rounded-xl transition-all group"
+                              className="flex items-center justify-between p-4 border border-slate-100 hover:border-emerald-500/30 rounded-2xl hover:bg-emerald-50/10 cursor-pointer transition-all group"
                             >
                               <div className="flex items-center gap-3">
-                                <div className="h-10 w-10 bg-emerald-50 dark:bg-emerald-950/30 rounded-lg flex items-center justify-center text-emerald-600">
-                                  <Sprout className="h-5 w-5" />
+                                <div className={`h-10 w-10 rounded-xl flex items-center justify-center font-bold text-sm ${
+                                  reg.crop_stage === 'Harvested' ? 'bg-yellow-50 text-yellow-750' : 'bg-emerald-50 text-emerald-750'
+                                }`}>
+                                  {reg.crop_stage === 'Harvested' ? '📦' : '🌱'}
                                 </div>
                                 <div>
-                                  <p className="text-sm font-bold">{reg.crop_name}</p>
-                                  <p className="text-[10px] text-slate-400 font-mono">Reg ID: {reg.registration_number}</p>
+                                  <div className="flex items-center gap-2">
+                                    <h4 className="text-xs font-extrabold text-slate-900">{reg.crop_name}</h4>
+                                    <span className={`text-[8px] font-bold px-1.5 py-0.5 rounded ${
+                                      reg.crop_stage === 'Harvested' ? 'bg-yellow-50 text-yellow-700' : 'bg-emerald-50 text-emerald-700'
+                                    }`}>
+                                      {reg.crop_stage}
+                                    </span>
+                                  </div>
+                                  <p className="text-[10px] text-slate-400 font-mono mt-0.5">{reg.registration_number}</p>
                                 </div>
                               </div>
                               
                               <div className="flex items-center gap-4">
-                                <span className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold ${
-                                  reg.status === 'Payment Completed' ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300' :
-                                  reg.status === 'Procured' ? 'bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300' :
-                                  reg.status === 'Slot Booked' ? 'bg-gov-gold-100 text-gov-gold-800 dark:bg-gov-gold-950 dark:text-gov-gold-300' :
-                                  'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300'
+                                <div className="text-right hidden sm:block">
+                                  <p className="text-xs font-bold text-slate-750">{reg.expected_quantity} {reg.quantity_unit || 'Qtl'}</p>
+                                  <p className="text-[9px] text-slate-400">{reg.village}, {reg.district}</p>
+                                </div>
+                                <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold ${
+                                  reg.status === 'Payment Completed' ? 'bg-emerald-100 text-emerald-805' :
+                                  reg.status === 'Approved' || reg.status === 'Sample Verified' ? 'bg-emerald-50 text-emerald-700' :
+                                  reg.status === 'Slot Booked' ? 'bg-amber-100 text-amber-805' : 'bg-slate-100 text-slate-600'
                                 }`}>
                                   {reg.status}
                                 </span>
@@ -762,93 +876,113 @@ const FarmerDashboard: React.FC = () => {
                     </div>
                   </div>
                 ) : (
-                  /* DETAILED REGISTRATION VIEW */
+                  /* REGISTRATION DETAIL FLOW PANELS */
                   <div className="space-y-6">
-                    <button
+                    <button 
                       onClick={() => setSelectedReg(null)}
-                      className="flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-slate-800 dark:hover:text-white"
+                      className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-800 transition-colors font-bold cursor-pointer"
                     >
-                      <X className="h-4 w-4" />
-                      Back to Queue
+                      <ArrowLeft className="h-4 w-4" />
+                      Back to Dashboard
                     </button>
 
                     <div className="grid gap-6 md:grid-cols-12">
-                      {/* Left: General info and steps */}
                       <div className="md:col-span-8 space-y-6">
-                        <div className="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 rounded-3xl p-6 shadow-sm">
-                          <div className="flex justify-between items-start border-b pb-4 mb-4 dark:border-slate-800">
+                        {/* Summary Card */}
+                        <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm">
+                          <div className="flex justify-between items-start border-b pb-4 mb-4">
                             <div>
-                              <h3 className="text-lg font-bold text-emerald-600 dark:text-emerald-400">{selectedReg.crop_name} Pre-Harvest Registration</h3>
-                              <p className="text-[10px] text-slate-400 font-mono mt-0.5">Registration ID: {selectedReg.registration_number}</p>
+                              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                                selectedReg.crop_stage === 'Harvested' ? 'bg-yellow-50 text-yellow-700' : 'bg-emerald-50 text-emerald-700'
+                              }`}>
+                                {selectedReg.crop_stage} Registration Details
+                              </span>
+                              <h3 className="text-base font-extrabold text-slate-900 mt-2">{selectedReg.crop_name} ({selectedReg.expected_quantity} {selectedReg.quantity_unit || 'Qtl'})</h3>
+                              <p className="text-xs text-slate-450 font-mono mt-0.5">{selectedReg.registration_number}</p>
                             </div>
-                            <span className="bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400 px-3 py-1 rounded-full text-xs font-bold border border-emerald-500/10">
-                              {selectedReg.status}
+                            <span className="bg-slate-100 text-slate-650 text-xs font-bold px-3 py-1 rounded-lg">
+                              Status: {selectedReg.status}
                             </span>
                           </div>
 
                           <div className="grid grid-cols-2 gap-4 text-xs">
                             <div>
-                              <p className="text-slate-400">Village & Mandal</p>
-                              <p className="font-semibold text-slate-800 dark:text-slate-200">{selectedReg.village}, {selectedReg.mandal}</p>
+                              <p className="text-slate-400">Farmer Contact</p>
+                              <p className="font-bold text-slate-700">{selectedReg.phone_number}</p>
                             </div>
                             <div>
-                              <p className="text-slate-400">District & State</p>
-                              <p className="font-semibold text-slate-800 dark:text-slate-200">{selectedReg.district}, {selectedReg.state}</p>
+                              <p className="text-slate-400">State / Location</p>
+                              <p className="font-bold text-slate-700">{selectedReg.village}, {selectedReg.mandal}, {selectedReg.district}</p>
                             </div>
-                            <div>
-                              <p className="text-slate-400">Land Acreage</p>
-                              <p className="font-semibold text-slate-800 dark:text-slate-200">{selectedReg.land_area} Acres</p>
-                            </div>
-                            <div>
-                              <p className="text-slate-400">Expected Quantity</p>
-                              <p className="font-semibold text-slate-800 dark:text-slate-200">{selectedReg.expected_quantity} Qtl</p>
-                            </div>
+                            {selectedReg.produce_category && (
+                              <div>
+                                <p className="text-slate-400">Category</p>
+                                <p className="font-bold text-slate-700">{selectedReg.produce_category}</p>
+                              </div>
+                            )}
+                            {selectedReg.harvest_date ? (
+                              <div>
+                                <p className="text-slate-400">Harvest Date</p>
+                                <p className="font-bold text-slate-700">{selectedReg.harvest_date}</p>
+                              </div>
+                            ) : (
+                              <div>
+                                <p className="text-slate-400">{t('expected_harvest')}</p>
+                                <p className="font-bold text-slate-700">{selectedReg.expected_harvest_month}</p>
+                              </div>
+                            )}
                           </div>
                         </div>
 
-                        {/* LIVE CAMERA CAPTURE BLOCK */}
-                        <div className="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 rounded-3xl p-6 shadow-sm">
-                          <h4 className="text-sm font-bold mb-1 flex items-center gap-2">
-                            <Camera className="h-5 w-5 text-emerald-600" />
-                            Produce Images Verification
-                          </h4>
-                          <p className="text-[11px] text-slate-400 mb-6">Capture the three required farm-gate check photos. Gallery upload is blocked by security policy.</p>
+                        {/* PHOTO CAPTURE & OpenCV SECTION */}
+                        <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm space-y-5">
+                          <div>
+                            <h4 className="text-sm font-extrabold text-slate-900 flex items-center gap-2">
+                              <Camera className="h-5 w-5 text-emerald-600" />
+                              Visual Assessment Quality Checks
+                            </h4>
+                            <p className="text-xs text-slate-400 mt-1">Upload required photos for preliminary AI moisture estimation and crop quality grade assessment.</p>
+                          </div>
 
-                          <div className="grid grid-cols-3 gap-4">
+                          <div className="grid grid-cols-3 gap-3">
                             {(['full_produce', 'close_up', 'storage_view'] as const).map((type) => {
-                              const isCaptured = !!capturedImages[type] || ['AI Reviewed', 'Sample Requested', 'Approved', 'Slot Booked', 'Procured', 'Payment Completed'].includes(selectedReg.status);
+                              const hasImg = capturedImages[type] || selectedReg.images?.find(i => i.image_type === type);
+                              const imgObj = selectedReg.images?.find(i => i.image_type === type);
+                              const src = imgObj ? `http://localhost:8000${imgObj.image_url}` : capturedImages[type];
+
                               return (
-                                <div key={type} className="flex flex-col items-center">
-                                  <div className="relative h-24 w-full rounded-2xl bg-slate-100 border border-slate-200/80 dark:bg-slate-950 dark:border-slate-850 flex flex-col items-center justify-center overflow-hidden group">
-                                    {isCaptured ? (
-                                      <div className="absolute inset-0 bg-emerald-950/10 flex flex-col items-center justify-center text-emerald-600">
-                                        <CheckCircle className="h-8 w-8 text-emerald-500" />
-                                        <span className="text-[9px] font-bold uppercase mt-1">Uploaded</span>
-                                      </div>
-                                    ) : (
-                                      <button
-                                        onClick={() => openCamera(type)}
-                                        className="h-full w-full flex flex-col items-center justify-center text-slate-400 hover:text-emerald-500 hover:bg-slate-50 dark:hover:bg-slate-900"
-                                      >
-                                        <Camera className="h-6 w-6" />
-                                        <span className="text-[9px] font-semibold uppercase mt-1">Capture</span>
-                                      </button>
-                                    )}
-                                  </div>
-                                  <span className="text-[10px] text-slate-400 capitalize mt-2 font-bold">
-                                    {type.replace('_', ' ')}
-                                  </span>
-                                </div>
+                                <button
+                                  key={type}
+                                  type="button"
+                                  onClick={() => openCamera(type)}
+                                  className={`relative h-28 border rounded-2xl flex flex-col items-center justify-center gap-1.5 transition-all text-center p-3 cursor-pointer ${
+                                    hasImg ? 'border-emerald-500 bg-emerald-50/10' : 'border-dashed border-slate-300 hover:bg-slate-50'
+                                  }`}
+                                >
+                                  {hasImg ? (
+                                    <>
+                                      <img src={src} className="absolute inset-0 h-full w-full object-cover rounded-2xl opacity-40" />
+                                      <CheckCircle className="h-5 w-5 text-emerald-600 relative z-10" />
+                                      <span className="text-[9px] font-extrabold uppercase text-emerald-700 relative z-10">{type.replace('_', ' ')}</span>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Camera className="h-5 w-5 text-slate-400" />
+                                      <span className="text-[9px] font-bold text-slate-500 leading-tight uppercase">{type.replace('_', ' ')}</span>
+                                      <span className="text-[7px] text-slate-450 uppercase tracking-widest font-extrabold bg-slate-100 px-1.5 py-0.5 rounded mt-0.5">Capture</span>
+                                    </>
+                                  )}
+                                </button>
                               );
                             })}
                           </div>
 
-                          {/* Trigger AI assess buttons */}
+                          {/* Assessment button */}
                           {selectedReg.status === 'Images Uploaded' && (
                             <button
                               onClick={handleAiPreAssessment}
                               disabled={analyzing}
-                              className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 px-4 rounded-xl text-xs uppercase tracking-wider mt-6 shadow-md transition-all flex items-center justify-center gap-2"
+                              className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 px-4 rounded-xl text-xs uppercase tracking-wider shadow transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
                             >
                               {analyzing ? (
                                 <>
@@ -867,39 +1001,39 @@ const FarmerDashboard: React.FC = () => {
 
                         {/* AI ASSESSMENT REPORT */}
                         {aiReport && (
-                          <div className="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 rounded-3xl p-6 shadow-sm space-y-4">
-                            <div className="flex justify-between items-center border-b pb-3 dark:border-slate-800">
-                              <h4 className="text-sm font-bold text-slate-900 dark:text-white">AI Visual Evaluation Log</h4>
-                              <span className="bg-emerald-50 text-emerald-600 dark:bg-emerald-950 text-xs font-extrabold px-2.5 py-0.5 rounded-full">
+                          <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm space-y-4">
+                            <div className="flex justify-between items-center border-b pb-3">
+                              <h4 className="text-sm font-bold text-slate-900">AI Visual Evaluation Log</h4>
+                              <span className="bg-emerald-50 text-emerald-700 text-xs font-extrabold px-2.5 py-0.5 rounded-full border border-emerald-500/10">
                                 OpenCV Score: {aiReport.score}%
                               </span>
                             </div>
 
                             <div className="grid grid-cols-2 gap-4 text-xs">
-                              <div className="bg-slate-50 dark:bg-slate-950 p-3 rounded-xl">
+                              <div className="bg-slate-50 p-3 rounded-xl">
                                 <p className="text-slate-400">Visual Quality Grade</p>
-                                <p className="font-bold text-slate-800 dark:text-slate-200 text-sm mt-0.5">{aiReport.visual_quality}</p>
+                                <p className="font-bold text-slate-800 text-sm mt-0.5">{aiReport.visual_quality}</p>
                               </div>
-                              <div className="bg-slate-50 dark:bg-slate-950 p-3 rounded-xl">
+                              <div className="bg-slate-50 p-3 rounded-xl">
                                 <p className="text-slate-400">Grain Uniformity</p>
-                                <p className="font-bold text-slate-800 dark:text-slate-200 text-sm mt-0.5">{aiReport.grain_uniformity}%</p>
+                                <p className="font-bold text-slate-800 text-sm mt-0.5">{aiReport.grain_uniformity}%</p>
                               </div>
-                              <div className="bg-slate-50 dark:bg-slate-950 p-3 rounded-xl">
+                              <div className="bg-slate-50 p-3 rounded-xl">
                                 <p className="text-slate-400">Estimated Moisture</p>
-                                <p className="font-bold text-slate-800 dark:text-slate-200 text-sm mt-0.5">{aiReport.estimated_moisture}%</p>
+                                <p className="font-bold text-slate-800 text-sm mt-0.5">{aiReport.estimated_moisture}%</p>
                               </div>
-                              <div className="bg-slate-50 dark:bg-slate-950 p-3 rounded-xl">
+                              <div className="bg-slate-50 p-3 rounded-xl">
                                 <p className="text-slate-400">Foreign Material</p>
-                                <p className="font-bold text-slate-800 dark:text-slate-200 text-sm mt-0.5">{aiReport.foreign_material}%</p>
+                                <p className="font-bold text-slate-800 text-sm mt-0.5">{aiReport.foreign_material}%</p>
                               </div>
                             </div>
 
-                            <div className="bg-slate-50 dark:bg-slate-950 p-3.5 rounded-xl border border-dashed dark:border-slate-800">
+                            <div className="bg-slate-50 p-3.5 rounded-xl border border-dashed border-slate-200">
                               <p className="text-[10px] text-slate-400 uppercase font-bold">Officer Recommendation</p>
-                              <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed mt-1 font-semibold">{aiReport.recommendation}</p>
+                              <p className="text-xs text-slate-600 leading-relaxed mt-1 font-semibold">{aiReport.recommendation}</p>
                             </div>
 
-                            <div className="flex gap-2 bg-slate-100 dark:bg-slate-950/60 p-3 rounded-xl">
+                            <div className="flex gap-2 bg-slate-50 p-3 rounded-xl">
                               <AlertTriangle className="h-5 w-5 text-slate-400 shrink-0 mt-0.5" />
                               <p className="text-[10px] text-slate-400 leading-normal">{t('ai_disclaimer')}</p>
                             </div>
@@ -908,7 +1042,7 @@ const FarmerDashboard: React.FC = () => {
                             {['AI Reviewed', 'Approved', 'Sample Verified'].includes(selectedReg.status) && (
                               <button
                                 onClick={() => setBookingOpen(true)}
-                                className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 px-4 rounded-xl text-xs uppercase tracking-wider shadow-md transition-all flex items-center justify-center gap-2"
+                                className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 px-4 rounded-xl text-xs uppercase tracking-wider shadow transition-all flex items-center justify-center gap-2 cursor-pointer"
                               >
                                 <Calendar className="h-4.5 w-4.5" />
                                 Book Procurement Slot
@@ -919,16 +1053,16 @@ const FarmerDashboard: React.FC = () => {
 
                         {/* PAYMENT TRACKING INTERACTIVE WIDGET */}
                         {['Slot Booked', 'Procured', 'Payment Completed'].includes(selectedReg.status) && (
-                          <div className="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 rounded-3xl p-6 shadow-sm space-y-4">
-                            <h4 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                              <Landmark className="h-5 w-5 text-emerald-600" />
+                          <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm space-y-4">
+                            <h4 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                              <Landmark className="h-5 w-5 text-emerald-650" />
                               Payment Tracking Status
                             </h4>
 
                             <div className="relative pt-1">
                               <div className="flex mb-2 items-center justify-between text-xs">
                                 <div>
-                                  <span className="text-[10px] font-semibold inline-block py-1 px-2 uppercase rounded-full text-emerald-600 bg-emerald-50 dark:bg-emerald-950">
+                                  <span className="text-[10px] font-semibold inline-block py-1 px-2 uppercase rounded-full text-emerald-700 bg-emerald-50">
                                     Direct Payout Status
                                   </span>
                                 </div>
@@ -938,7 +1072,7 @@ const FarmerDashboard: React.FC = () => {
                                   </span>
                                 </div>
                               </div>
-                              <div className="overflow-hidden h-2 mb-4 text-xs flex rounded-full bg-slate-100 dark:bg-slate-950">
+                              <div className="overflow-hidden h-2 mb-4 text-xs flex rounded-full bg-slate-100">
                                 <div 
                                   style={{ width: selectedReg.status === 'Payment Completed' ? '100%' : '50%' }}
                                   className="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-emerald-500 transition-all duration-500"
@@ -949,25 +1083,25 @@ const FarmerDashboard: React.FC = () => {
                             <div className="grid grid-cols-2 gap-4 text-xs">
                               <div>
                                 <p className="text-slate-400">Total Amount</p>
-                                <p className="font-bold text-slate-800 dark:text-slate-200 text-sm">
+                                <p className="font-bold text-slate-800 text-sm">
                                   ₹{Math.round(selectedReg.expected_quantity * 2183).toLocaleString()}
                                 </p>
                               </div>
                               <div>
                                 <p className="text-slate-400">{t('txn_id')}</p>
-                                <p className="font-mono font-bold text-slate-700 dark:text-slate-300">
+                                <p className="font-mono font-bold text-slate-700">
                                   {selectedReg.status === 'Payment Completed' ? 'TXN-98754125301' : 'TXN-GENERATING...'}
                                 </p>
                               </div>
                               <div>
-                                <p className="text-slate-400">Payment Date</p>
-                                <p className="font-semibold text-slate-800 dark:text-slate-200">
+                                <p className="text-slate-400 font-semibold">Payment Date</p>
+                                <p className="font-semibold text-slate-800">
                                   {selectedReg.status === 'Payment Completed' ? 'July 10, 2026' : 'Awaiting Weigh-In'}
                                 </p>
                               </div>
                               <div>
                                 <p className="text-slate-400">{t('expected_payment_date')}</p>
-                                <p className="font-semibold text-slate-800 dark:text-slate-200">
+                                <p className="font-semibold text-slate-800">
                                   July 13, 2026
                                 </p>
                               </div>
@@ -978,13 +1112,13 @@ const FarmerDashboard: React.FC = () => {
 
                       {/* Right: Vertical status timeline */}
                       <div className="md:col-span-4 space-y-6">
-                        <div className="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 rounded-3xl p-6 shadow-sm">
+                        <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm">
                           <h4 className="text-sm font-bold mb-6 flex items-center gap-2">
-                            <Clock className="h-5 w-5 text-emerald-600" />
+                            <Clock className="h-5 w-5 text-emerald-650" />
                             {t('timeline_status')}
                           </h4>
 
-                          <div className="relative pl-6 border-l-2 border-slate-100 dark:border-slate-850 space-y-6 text-xs">
+                          <div className="relative pl-6 border-l-2 border-slate-100 space-y-6 text-xs">
                             {getTimelineSteps().map((step, idx) => {
                               const currentIdx = getTimelineIndex(selectedReg.status);
                               const isCompleted = idx <= currentIdx;
@@ -992,11 +1126,15 @@ const FarmerDashboard: React.FC = () => {
 
                               return (
                                 <div key={step} className="relative">
-                                  <div className={`absolute -left-[31px] top-0 h-4 w-4 rounded-full border-2 flex items-center justify-center transition-all ${isCompleted ? 'bg-emerald-500 border-emerald-500 text-white' : 'bg-white dark:bg-slate-900 border-slate-300'}`}>
+                                  <div className={`absolute -left-[31px] top-0 h-4 w-4 rounded-full border-2 flex items-center justify-center transition-all ${
+                                    isCompleted ? 'bg-emerald-500 border-emerald-500 text-white' : 'bg-white border-slate-350 text-transparent'
+                                  }`}>
                                     {isCompleted && <span className="text-[8px] font-bold">✓</span>}
                                   </div>
                                   <div className="pl-1">
-                                    <p className={`font-bold transition-colors ${isCurrent ? 'text-emerald-600 dark:text-emerald-400' : isCompleted ? 'text-slate-800 dark:text-slate-200' : 'text-slate-400'}`}>
+                                    <p className={`font-bold transition-colors ${
+                                      isCurrent ? 'text-emerald-650' : isCompleted ? 'text-slate-800' : 'text-slate-400'
+                                    }`}>
                                       {t(`status_${step.toLowerCase().replace(' ', '_')}`) || step}
                                     </p>
                                   </div>
@@ -1013,26 +1151,26 @@ const FarmerDashboard: React.FC = () => {
             )}
 
             {activeTab === 'register' && (
-              /* CROP REGISTRATION FORM */
+              /* PRE-HARVEST CROP REGISTRATION FORM */
               <motion.div
                 key="register"
                 initial={{ opacity: 0, y: 15 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -15 }}
-                className="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 rounded-3xl p-8 shadow-sm max-w-2xl mx-auto"
+                className="bg-white border border-slate-200 rounded-3xl p-8 shadow-sm max-w-2xl mx-auto"
               >
-                <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-6 border-b pb-3 dark:border-slate-800">
+                <h3 className="text-lg font-bold text-slate-900 mb-6 border-b pb-3 border-slate-100">
                   Submit Pre-Harvest Registration Form
                 </h3>
 
                 <form onSubmit={handleRegisterSubmit} className="space-y-6">
                   <div className="grid gap-6 sm:grid-cols-2">
                     <div>
-                      <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">Crop Name</label>
+                      <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">Crop Name</label>
                       <select
                         value={formData.crop_name}
                         onChange={(e) => setFormData(prev => ({ ...prev, crop_name: e.target.value }))}
-                        className="w-full rounded-xl border border-slate-200 bg-slate-50 dark:bg-slate-950 dark:border-slate-800 py-3 px-4 text-xs font-semibold focus:outline-none focus:border-emerald-500"
+                        className="w-full rounded-xl border border-slate-200 bg-slate-50 py-3 px-4 text-xs font-semibold focus:outline-none focus:border-emerald-500"
                       >
                         <option value="Paddy">Paddy</option>
                         <option value="Cotton">Cotton</option>
@@ -1042,11 +1180,11 @@ const FarmerDashboard: React.FC = () => {
                     </div>
 
                     <div>
-                      <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">{t('expected_harvest')}</label>
+                      <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">{t('expected_harvest')}</label>
                       <select
                         value={formData.expected_harvest_month}
                         onChange={(e) => setFormData(prev => ({ ...prev, expected_harvest_month: e.target.value }))}
-                        className="w-full rounded-xl border border-slate-200 bg-slate-50 dark:bg-slate-950 dark:border-slate-800 py-3 px-4 text-xs font-semibold focus:outline-none focus:border-emerald-500"
+                        className="w-full rounded-xl border border-slate-200 bg-slate-50 py-3 px-4 text-xs font-semibold focus:outline-none focus:border-emerald-500"
                       >
                         <option value="July 2026">July 2026</option>
                         <option value="August 2026">August 2026</option>
@@ -1054,141 +1192,547 @@ const FarmerDashboard: React.FC = () => {
                         <option value="October 2026">October 2026</option>
                       </select>
                     </div>
+                  </div>
 
+                  <div className="grid gap-6 sm:grid-cols-2">
                     <div>
-                      <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">{t('expected_qty')}</label>
+                      <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">{t('expected_qty')}</label>
                       <input
                         type="number"
                         required
                         placeholder="e.g. 50"
                         value={formData.expected_quantity}
                         onChange={(e) => setFormData(prev => ({ ...prev, expected_quantity: e.target.value }))}
-                        className="w-full rounded-xl border border-slate-200 bg-slate-50 dark:bg-slate-950 dark:border-slate-800 py-3 px-4 text-xs font-semibold focus:outline-none focus:border-emerald-500"
+                        className="w-full rounded-xl border border-slate-200 bg-slate-50 py-3 px-4 text-xs font-semibold focus:outline-none focus:border-emerald-500"
                       />
                     </div>
 
                     <div>
-                      <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">{t('land_area')}</label>
+                      <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">{t('land_area')}</label>
                       <input
                         type="number"
                         required
-                        placeholder="e.g. 4.5"
+                        step="0.01"
+                        placeholder="e.g. 3.5"
                         value={formData.land_area}
                         onChange={(e) => setFormData(prev => ({ ...prev, land_area: e.target.value }))}
-                        className="w-full rounded-xl border border-slate-200 bg-slate-50 dark:bg-slate-950 dark:border-slate-800 py-3 px-4 text-xs font-semibold focus:outline-none focus:border-emerald-500"
+                        className="w-full rounded-xl border border-slate-200 bg-slate-50 py-3 px-4 text-xs font-semibold focus:outline-none focus:border-emerald-500"
                       />
                     </div>
+                  </div>
 
-                    <div>
-                      <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">{t('district')}</label>
-                      <input
-                        type="text"
-                        required
-                        value={formData.district}
-                        onChange={(e) => setFormData(prev => ({ ...prev, district: e.target.value }))}
-                        className="w-full rounded-xl border border-slate-200 bg-slate-50 dark:bg-slate-950 dark:border-slate-800 py-3 px-4 text-xs font-semibold focus:outline-none focus:border-emerald-500"
-                      />
+                  <div className="border-t pt-5">
+                    <p className="text-xs font-bold text-slate-500 mb-4 flex items-center gap-1">
+                      <MapPin className="h-4.5 w-4.5 text-emerald-650" />
+                      Weigh-In Procurement Address Setup
+                    </p>
+                    <div className="grid gap-6 sm:grid-cols-2">
+                      <div>
+                        <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-2">State</label>
+                        <input
+                          type="text"
+                          required
+                          value={formData.state}
+                          onChange={(e) => setFormData(prev => ({ ...prev, state: e.target.value }))}
+                          className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 px-4 text-xs font-semibold focus:outline-none focus:border-emerald-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-2">District</label>
+                        <input
+                          type="text"
+                          required
+                          value={formData.district}
+                          onChange={(e) => setFormData(prev => ({ ...prev, district: e.target.value }))}
+                          className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 px-4 text-xs font-semibold focus:outline-none focus:border-emerald-500"
+                        />
+                      </div>
                     </div>
 
-                    <div>
-                      <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">{t('mandal')}</label>
-                      <input
-                        type="text"
-                        required
-                        value={formData.mandal}
-                        onChange={(e) => setFormData(prev => ({ ...prev, mandal: e.target.value }))}
-                        className="w-full rounded-xl border border-slate-200 bg-slate-50 dark:bg-slate-950 dark:border-slate-800 py-3 px-4 text-xs font-semibold focus:outline-none focus:border-emerald-500"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">{t('village')}</label>
-                      <input
-                        type="text"
-                        required
-                        value={formData.village}
-                        onChange={(e) => setFormData(prev => ({ ...prev, village: e.target.value }))}
-                        className="w-full rounded-xl border border-slate-200 bg-slate-50 dark:bg-slate-950 dark:border-slate-800 py-3 px-4 text-xs font-semibold focus:outline-none focus:border-emerald-500"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">{t('phone_number')}</label>
-                      <input
-                        type="tel"
-                        required
-                        maxLength={10}
-                        placeholder="9876543210"
-                        value={formData.phone_number}
-                        onChange={(e) => setFormData(prev => ({ ...prev, phone_number: e.target.value.replace(/\D/g, '') }))}
-                        className="w-full rounded-xl border border-slate-200 bg-slate-50 dark:bg-slate-950 dark:border-slate-800 py-3 px-4 text-xs font-semibold focus:outline-none focus:border-emerald-500"
-                      />
+                    <div className="grid gap-6 sm:grid-cols-3 mt-4">
+                      <div>
+                        <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-2">Mandal</label>
+                        <input
+                          type="text"
+                          required
+                          value={formData.mandal}
+                          onChange={(e) => setFormData(prev => ({ ...prev, mandal: e.target.value }))}
+                          className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 px-4 text-xs font-semibold focus:outline-none focus:border-emerald-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-2">Village</label>
+                        <input
+                          type="text"
+                          required
+                          value={formData.village}
+                          onChange={(e) => setFormData(prev => ({ ...prev, village: e.target.value }))}
+                          className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 px-4 text-xs font-semibold focus:outline-none focus:border-emerald-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-2">Mobile Contact</label>
+                        <input
+                          type="tel"
+                          required
+                          value={formData.phone_number}
+                          placeholder="Phone number"
+                          onChange={(e) => setFormData(prev => ({ ...prev, phone_number: e.target.value }))}
+                          className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 px-4 text-xs font-semibold focus:outline-none focus:border-emerald-500"
+                        />
+                      </div>
                     </div>
                   </div>
 
                   <button
                     type="submit"
-                    className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3.5 px-4 rounded-xl text-xs uppercase tracking-wider shadow-md transition-all mt-4"
+                    className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3.5 rounded-xl text-xs uppercase tracking-wider shadow cursor-pointer mt-4"
                   >
-                    Submit Registration
+                    {t('submit_reg')}
                   </button>
                 </form>
               </motion.div>
             )}
 
+            {activeTab === 'register-produce' && (
+              /* HARVESTED PRODUCE REGISTRATION FORM */
+              <motion.div
+                key="register-produce"
+                initial={{ opacity: 0, y: 15 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -15 }}
+                className="bg-white border border-slate-200 rounded-3xl p-8 shadow-sm max-w-2xl mx-auto"
+              >
+                <h3 className="text-lg font-bold text-slate-900 mb-2 border-b pb-3 border-slate-100 flex items-center gap-2">
+                  <ShoppingBag className="h-5 w-5 text-yellow-600" />
+                  Submit Harvested Produce Registration
+                </h3>
+                <p className="text-xs text-slate-400 mb-6 leading-relaxed">
+                  For produce that is already harvested and ready for sale. You will be redirected to submit produce quality evaluation images immediately upon submission.
+                </p>
+
+                <form onSubmit={handleProduceSubmit} className="space-y-4">
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div>
+                      <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">Farmer Name</label>
+                      <input
+                        type="text"
+                        disabled
+                        value={produceFormData.farmer_name}
+                        className="w-full rounded-xl border border-slate-200 bg-slate-100 py-3 px-4 text-xs font-bold text-slate-700"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">Phone Number</label>
+                      <input
+                        type="tel"
+                        required
+                        placeholder="Mobile Number"
+                        value={produceFormData.phone_number}
+                        onChange={(e) => setProduceFormData(prev => ({ ...prev, phone_number: e.target.value }))}
+                        className="w-full rounded-xl border border-slate-200 bg-slate-50 py-3 px-4 text-xs font-semibold focus:outline-none focus:border-emerald-500"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid gap-4 sm:grid-cols-3">
+                    <div>
+                      <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">Produce Name</label>
+                      <select
+                        value={produceFormData.produce_name}
+                        onChange={(e) => setProduceFormData(prev => ({ ...prev, produce_name: e.target.value }))}
+                        className="w-full rounded-xl border border-slate-200 bg-slate-50 py-3 px-3 text-xs font-semibold focus:outline-none focus:border-emerald-500"
+                      >
+                        {mspProduceItems.map(item => (
+                          <option key={item.name} value={item.name}>{item.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">Category</label>
+                      <select
+                        value={produceFormData.produce_category}
+                        onChange={(e) => setProduceFormData(prev => ({ ...prev, produce_category: e.target.value }))}
+                        className="w-full rounded-xl border border-slate-200 bg-slate-50 py-3 px-3 text-xs font-semibold focus:outline-none"
+                      >
+                        <option value="Grains">Grains</option>
+                        <option value="Pulses">Pulses</option>
+                        <option value="Vegetables">Vegetables</option>
+                        <option value="Oilseeds">Oilseeds</option>
+                        <option value="Other">Other</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">Ready Status</label>
+                      <select
+                        value={produceFormData.produce_ready_status}
+                        onChange={(e) => setProduceFormData(prev => ({ ...prev, produce_ready_status: e.target.value }))}
+                        className="w-full rounded-xl border border-slate-200 bg-slate-50 py-3 px-3 text-xs font-semibold focus:outline-none"
+                      >
+                        <option value="Ready">Harvest Complete (Ready)</option>
+                        <option value="Storage Ready">In Storage Yards</option>
+                        <option value="Bagged">Bags Ready at Field</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="grid gap-4 sm:grid-cols-3">
+                    <div>
+                      <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">Quantity</label>
+                      <input
+                        type="number"
+                        required
+                        placeholder="e.g. 45"
+                        value={produceFormData.expected_quantity}
+                        onChange={(e) => setProduceFormData(prev => ({ ...prev, expected_quantity: e.target.value }))}
+                        className="w-full rounded-xl border border-slate-200 bg-slate-50 py-3 px-4 text-xs font-semibold focus:outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">Unit</label>
+                      <select
+                        value={produceFormData.quantity_unit}
+                        onChange={(e) => setProduceFormData(prev => ({ ...prev, quantity_unit: e.target.value }))}
+                        className="w-full rounded-xl border border-slate-200 bg-slate-50 py-3 px-3 text-xs font-semibold focus:outline-none"
+                      >
+                        <option value="Quintals">Quintals</option>
+                        <option value="Kg">Kilograms (Kg)</option>
+                        <option value="Bags">Bags</option>
+                        <option value="Tons">Metric Tons</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">Harvest Date</label>
+                      <input
+                        type="date"
+                        required
+                        value={produceFormData.harvest_date}
+                        onChange={(e) => setProduceFormData(prev => ({ ...prev, harvest_date: e.target.value }))}
+                        className="w-full rounded-xl border border-slate-200 bg-slate-50 py-3 px-3 text-xs font-semibold focus:outline-none"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="border-t pt-4">
+                    <p className="text-xs font-bold text-slate-650 mb-3 flex items-center gap-1">
+                      <MapPin className="h-4.5 w-4.5 text-yellow-600" />
+                      Produce Storage Location
+                    </p>
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <div>
+                        <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-505 mb-1.5">State</label>
+                        <input
+                          type="text"
+                          required
+                          value={produceFormData.state}
+                          onChange={(e) => setProduceFormData(prev => ({ ...prev, state: e.target.value }))}
+                          className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 px-4 text-xs font-semibold"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-505 mb-1.5">District</label>
+                        <input
+                          type="text"
+                          required
+                          value={produceFormData.district}
+                          onChange={(e) => setProduceFormData(prev => ({ ...prev, district: e.target.value }))}
+                          className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 px-4 text-xs font-semibold"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid gap-4 sm:grid-cols-3 mt-3">
+                      <div>
+                        <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-505 mb-1.5">Mandal</label>
+                        <input
+                          type="text"
+                          required
+                          value={produceFormData.mandal}
+                          onChange={(e) => setProduceFormData(prev => ({ ...prev, mandal: e.target.value }))}
+                          className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 px-4 text-xs font-semibold"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-505 mb-1.5">Village</label>
+                        <input
+                          type="text"
+                          required
+                          value={produceFormData.village}
+                          onChange={(e) => setProduceFormData(prev => ({ ...prev, village: e.target.value }))}
+                          className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 px-4 text-xs font-semibold"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-505 mb-1.5">PIN Code</label>
+                        <input
+                          type="text"
+                          required
+                          placeholder="e.g. 506003"
+                          value={produceFormData.pin_code}
+                          onChange={(e) => setProduceFormData(prev => ({ ...prev, pin_code: e.target.value.replace(/\D/g, '') }))}
+                          className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 px-4 text-xs font-semibold"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <button
+                    type="submit"
+                    className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3.5 rounded-xl text-xs uppercase tracking-wider shadow cursor-pointer mt-4"
+                  >
+                    Submit Produce Registration
+                  </button>
+                </form>
+              </motion.div>
+            )}
+
+            {activeTab === 'procurement' && (
+              /* PROCUREMENT LIST VIEW */
+              <motion.div
+                key="procurement"
+                initial={{ opacity: 0, y: 15 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -15 }}
+                className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm"
+              >
+                <h3 className="text-base font-bold mb-4 flex items-center gap-2">
+                  <Landmark className="h-5 w-5 text-emerald-650" />
+                  {t('my_procurement')}
+                </h3>
+
+                {loadingProcurements ? (
+                  <div className="space-y-3">
+                    <div className="h-16 bg-slate-100 animate-pulse rounded-xl" />
+                    <div className="h-16 bg-slate-100 animate-pulse rounded-xl" />
+                  </div>
+                ) : procurements.length === 0 ? (
+                  <div className="text-center py-16 text-slate-400">
+                    <Landmark className="h-12 w-12 text-slate-350 mx-auto mb-3" />
+                    <p className="text-sm font-semibold mb-1">No procurements yet</p>
+                    <p className="text-xs">Once you book a procurement slot and it gets processed, it will appear here.</p>
+                  </div>
+                ) : (
+                  <div className="divide-y divide-slate-100">
+                    {/* Table header */}
+                    <div className="hidden sm:grid grid-cols-7 text-[10px] font-bold text-slate-400 uppercase tracking-wider pb-2 px-2">
+                      <span>Proc. ID</span>
+                      <span>Crop / Product</span>
+                      <span>Quantity</span>
+                      <span>Centre</span>
+                      <span>Status</span>
+                      <span>Payment</span>
+                      <span></span>
+                    </div>
+
+                    {procurements.map((proc) => (
+                      <div
+                        key={proc.id}
+                        onClick={() => {
+                          const reg = registrations.find(r => r.registration_number === proc.registration_number);
+                          if (reg) {
+                            handleSelectReg(reg);
+                            setActiveTab('overview');
+                          }
+                        }}
+                        className="grid grid-cols-1 sm:grid-cols-7 items-center gap-2 py-4 px-2 cursor-pointer hover:bg-slate-50 rounded-xl transition-all group text-xs text-slate-700"
+                      >
+                        <div>
+                          <p className="font-mono font-bold text-slate-800 text-[10px] leading-tight">{proc.procurement_number}</p>
+                          <p className="text-[9px] text-slate-400">{new Date(proc.created_at).toLocaleDateString('en-IN')}</p>
+                        </div>
+                        <div>
+                          <p className="font-bold text-slate-900">{proc.crop_name}</p>
+                          <p className="text-[10px] text-slate-450">{proc.product}</p>
+                        </div>
+                        <div>
+                          <p className="font-semibold text-slate-800">{proc.quantity} Qtl</p>
+                        </div>
+                        <div>
+                          <p className="font-semibold text-slate-805 leading-tight">{proc.centre_name}</p>
+                        </div>
+                        <div>
+                          <span className={`inline-block rounded-full px-2 py-0.5 text-[10px] font-bold ${
+                            proc.status === 'Payment Completed' ? 'bg-emerald-100 text-emerald-805' :
+                            proc.status === 'Procured' ? 'bg-blue-100 text-blue-800' :
+                            proc.status === 'Slot Booked' ? 'bg-amber-100 text-amber-805' :
+                            'bg-slate-100 text-slate-600'
+                          }`}>
+                            {proc.status}
+                          </span>
+                        </div>
+                        <div>
+                          <span className={`inline-block rounded-full px-2 py-0.5 text-[10px] font-bold ${
+                            proc.payment_status === 'Completed' ? 'bg-emerald-100 text-emerald-805' :
+                            proc.payment_status === 'Initiated' || proc.payment_status === 'Processing' ? 'bg-blue-100 text-blue-800' :
+                            'bg-slate-100 text-slate-600'
+                          }`}>
+                            {proc.payment_status}
+                          </span>
+                        </div>
+                        <div className="flex justify-end">
+                          <ChevronRight className="h-4 w-4 text-slate-400 group-hover:translate-x-1 transition-transform" />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </motion.div>
+            )}
+
             {activeTab === 'msp' && (
-              /* MSP INFORMATION TABLES */
+              /* MSP REDESIGNED VISUAL CARDS VIEW */
               <motion.div
                 key="msp"
                 initial={{ opacity: 0, y: 15 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -15 }}
-                className="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 rounded-3xl p-6 shadow-sm"
+                className="space-y-6"
               >
-                <h3 className="text-base font-bold mb-6 flex items-center gap-2">
-                  <TrendingUp className="h-5 w-5 text-emerald-600" />
-                  Minimum Support Prices (MSP) Schedules 2026-27
-                </h3>
+                <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm">
+                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b pb-5 mb-5 border-slate-100">
+                    <div>
+                      <h3 className="text-base font-extrabold text-slate-900 flex items-center gap-2">
+                        <TrendingUp className="h-5 w-5 text-emerald-650" />
+                        Agricultural Pricing & MSP Information Hub
+                      </h3>
+                      <p className="text-xs text-slate-400 mt-1">Review government Minimum Support Prices (MSP) and local market pricing updates.</p>
+                    </div>
+                    
+                    {/* Demo Warning Banner */}
+                    <div className="flex items-center gap-2 bg-amber-50 border border-amber-205 text-amber-850 p-2.5 rounded-xl text-[10px] font-bold">
+                      <AlertCircle className="h-4 w-4 text-amber-600 shrink-0" />
+                      <span>Demo Price Data. Values are for simulation/hackathon testing.</span>
+                    </div>
+                  </div>
 
-                <div className="grid gap-6 md:grid-cols-2">
-                  {mspRates.map((m) => (
-                    <div key={m.id} className="border border-slate-200/60 dark:border-slate-800 p-5 rounded-2xl bg-slate-50/50 dark:bg-slate-950/40 relative overflow-hidden flex flex-col justify-between">
+                  {/* Search and Category Filters */}
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+                    <div className="relative flex-1">
+                      <Search className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
+                      <input
+                        type="text"
+                        placeholder="Search crops... (e.g. Paddy, Wheat, Tomato, Cotton)"
+                        value={mspSearchQuery}
+                        onChange={(e) => setMspSearchQuery(e.target.value)}
+                        className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 pl-10 pr-4 text-xs font-semibold focus:outline-none focus:border-emerald-500 focus:bg-white"
+                      />
+                    </div>
+                    
+                    <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
+                      {['All', 'Grains', 'Pulses', 'Vegetables', 'Oilseeds'].map((cat) => (
+                        <button
+                          key={cat}
+                          onClick={() => setMspCategoryFilter(cat)}
+                          className={`px-3 py-2 rounded-xl text-xs font-bold whitespace-nowrap cursor-pointer ${
+                            mspCategoryFilter === cat 
+                              ? 'bg-emerald-600 text-white shadow-sm' 
+                              : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                          }`}
+                        >
+                          {cat}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Produce grid cards */}
+                <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+                  {filteredMspItems.map((item) => (
+                    <div 
+                      key={item.name} 
+                      className="bg-white border border-slate-200 rounded-3xl p-5 shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between h-48"
+                    >
                       <div>
-                        <div className="flex justify-between items-center mb-3">
-                          <span className="text-sm font-bold">{m.crop_name}</span>
-                          <span className="text-[10px] bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded font-bold font-mono">Verified</span>
-                        </div>
-                        
-                        <div className="space-y-2 mb-4 text-xs">
-                          <div className="flex justify-between">
-                            <span className="text-slate-400">Govt MSP Rate</span>
-                            <span className="font-bold text-emerald-600">₹{m.msp_rate} / Qtl</span>
+                        <div className="flex items-center justify-between mb-3.5">
+                          <div className="flex items-center gap-2">
+                            <span className="text-2xl">{item.image}</span>
+                            <span className="text-sm font-extrabold text-slate-900">{item.name}</span>
                           </div>
-                          <div className="flex justify-between">
-                            <span className="text-slate-400">Expected Mandi Rate</span>
-                            <span className="font-bold text-slate-500">₹{m.expected_market_price} / Qtl</span>
-                          </div>
+                          <span className={`text-[8px] font-extrabold uppercase px-2 py-0.5 rounded-full ${
+                            item.type === 'msp' 
+                              ? 'bg-emerald-100 text-emerald-800 border border-emerald-350/20' 
+                              : 'bg-slate-100 text-slate-650'
+                          }`}>
+                            {item.type === 'msp' ? 'Govt MSP' : 'Market Price'}
+                          </span>
                         </div>
+
+                        <p className="text-[10px] text-slate-450 leading-relaxed font-medium mb-4">
+                          {item.info}
+                        </p>
                       </div>
 
-                      {m.government_notification_url && (
-                        <a
-                          href={m.government_notification_url}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="text-[10px] text-emerald-600 font-bold hover:underline"
-                        >
-                          View Official Govt Notification Notification
-                        </a>
-                      )}
+                      <div className="flex justify-between items-baseline border-t border-slate-50 pt-3">
+                        <span className="text-[9px] text-slate-400 font-bold uppercase">Price / {item.unit}</span>
+                        <div className="text-right">
+                          <span className={`text-base font-extrabold ${item.type === 'msp' ? 'text-emerald-650' : 'text-slate-800'}`}>
+                            {item.price}
+                          </span>
+                        </div>
+                      </div>
                     </div>
                   ))}
+                  
+                  {filteredMspItems.length === 0 && (
+                    <div className="col-span-full text-center py-16 bg-white border border-slate-200 rounded-3xl text-slate-400">
+                      <Search className="h-10 w-10 mx-auto opacity-30 mb-2" />
+                      <p className="text-xs font-bold">No crops matches your search.</p>
+                    </div>
+                  )}
                 </div>
               </motion.div>
             )}
           </AnimatePresence>
         </div>
       </main>
+
+      {/* FLOATING VOICE NAVIGATION ASSISTANT (Premium Implementation) */}
+      <div className="fixed bottom-6 right-6 z-50">
+        <button
+          type="button"
+          onClick={startListening}
+          className={`h-16 w-16 rounded-full flex items-center justify-center shadow-2xl transition-transform hover:scale-110 active:scale-95 cursor-pointer border ${
+            voiceActive ? 'bg-red-500 border-red-400 text-white animate-pulse' : 'bg-emerald-600 border-emerald-500 text-white'
+          }`}
+          title="Voice Assistant Navigation"
+        >
+          <Mic className="h-7 w-7" />
+        </button>
+
+        {voiceActive && (
+          <div className="absolute bottom-20 right-0 w-72 bg-white border border-slate-200 p-4 rounded-2xl shadow-2xl space-y-3 z-50">
+            <div className="flex items-center gap-2">
+              <div className="flex gap-0.5 items-center h-4 shrink-0">
+                <div className="wave-bar !h-3" />
+                <div className="wave-bar !h-4" />
+                <div className="wave-bar !h-2" />
+              </div>
+              <span className="text-xs font-bold text-slate-700 animate-pulse">Listening... Speak now</span>
+            </div>
+            
+            {voiceText && (
+              <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-100 text-xs">
+                <p className="text-[9px] uppercase font-bold text-slate-400">Heard:</p>
+                <p className="font-bold text-slate-800 mt-0.5">"{voiceText}"</p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {voiceReply && !voiceActive && (
+          <div className="absolute bottom-20 right-0 w-72 bg-emerald-50 text-emerald-850 border border-emerald-200 p-4 rounded-2xl shadow-2xl space-y-2 z-50">
+            <p className="text-[9px] uppercase font-bold text-emerald-600">Assistant Response:</p>
+            <p className="text-xs font-semibold leading-relaxed text-slate-850">{voiceReply}</p>
+            <button 
+              onClick={() => setVoiceReply('')} 
+              className="text-[10px] text-slate-450 hover:text-slate-700 hover:underline font-bold mt-1 block"
+            >
+              Dismiss
+            </button>
+          </div>
+        )}
+      </div>
 
       {/* 1. CAMERA SIMULATOR MODAL PANEL */}
       <AnimatePresence>
@@ -1198,17 +1742,17 @@ const FarmerDashboard: React.FC = () => {
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
-              className="bg-slate-900 border border-slate-800 rounded-3xl p-6 w-full max-w-md relative text-slate-100 flex flex-col gap-4 overflow-hidden"
+              className="bg-white border border-slate-200 rounded-3xl p-6 w-full max-w-md relative text-slate-800 flex flex-col gap-4 overflow-hidden shadow-2xl"
             >
               {/* Target guidelines overlay inside camera viewport */}
-              <div className="relative h-64 w-full rounded-2xl bg-black overflow-hidden border border-slate-800 flex items-center justify-center">
+              <div className="relative h-64 w-full rounded-2xl bg-black overflow-hidden border border-slate-300 flex items-center justify-center">
                 {webcamActive ? (
                   <video ref={videoRef} className="absolute inset-0 h-full w-full object-cover" />
                 ) : (
                   <div className="text-center p-6 text-slate-500 flex flex-col items-center">
                     <Sprout className="h-10 w-10 text-emerald-600 animate-pulse mb-2" />
                     <p className="text-xs font-semibold text-slate-400">Simulating Crop Camera Viewport...</p>
-                    <p className="text-[10px] mt-1 text-slate-600">Camera target matches {imageType.replace('_', ' ')} specifications</p>
+                    <p className="text-[10px] mt-1 text-slate-650">Camera target matches {imageType.replace('_', ' ')} specifications</p>
                   </div>
                 )}
                 {/* Visual crop lines guidelines */}
@@ -1221,14 +1765,14 @@ const FarmerDashboard: React.FC = () => {
               </div>
 
               {/* Hardware & Location stamp indicators */}
-              <div className="bg-slate-950 p-3 rounded-xl space-y-1.5 text-[10px] font-mono text-slate-400">
+              <div className="bg-slate-50 p-3 rounded-xl space-y-1.5 text-[10px] font-mono text-slate-500 border border-slate-200">
                 <div className="flex justify-between">
                   <span>GPS COORDINATES</span>
-                  <span className="text-emerald-500 font-bold">{gpsData.lat.toFixed(4)}° N, {gpsData.lng.toFixed(4)}° E</span>
+                  <span className="text-emerald-600 font-bold">{gpsData.lat.toFixed(4)}° N, {gpsData.lng.toFixed(4)}° E</span>
                 </div>
                 <div className="flex justify-between">
                   <span>LOCATION VERIFIED</span>
-                  <span className="text-emerald-500">True (Cellular Ag-Cell Hub)</span>
+                  <span className="text-emerald-650">True (Cellular Ag-Cell Hub)</span>
                 </div>
                 <div className="flex justify-between">
                   <span>HARDWARE PLATFORM</span>
@@ -1239,13 +1783,13 @@ const FarmerDashboard: React.FC = () => {
               <div className="flex gap-2">
                 <button
                   onClick={startWebcam}
-                  className="flex-1 bg-slate-800 border border-slate-700 py-2.5 rounded-xl text-xs font-bold text-slate-200"
+                  className="flex-1 bg-slate-100 border border-slate-200 py-2.5 rounded-xl text-xs font-bold text-slate-700 hover:bg-slate-200"
                 >
                   Enable Webcam
                 </button>
                 <button
                   onClick={captureImage}
-                  className="flex-1 bg-emerald-600 hover:bg-emerald-700 py-2.5 rounded-xl text-xs font-bold text-white shadow-md"
+                  className="flex-1 bg-emerald-600 hover:bg-emerald-700 py-2.5 rounded-xl text-xs font-bold text-white shadow"
                 >
                   Capture Photo
                 </button>
@@ -1256,7 +1800,7 @@ const FarmerDashboard: React.FC = () => {
                   stopWebcam();
                   setCameraOpen(false);
                 }}
-                className="absolute right-4 top-4 text-slate-400 hover:text-white"
+                className="absolute right-4 top-4 text-slate-400 hover:text-slate-700"
               >
                 <X className="h-5 w-5" />
               </button>
@@ -1273,7 +1817,7 @@ const FarmerDashboard: React.FC = () => {
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
-              className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 w-full max-w-sm relative text-slate-800 dark:text-slate-100"
+              className="bg-white border border-slate-200 rounded-3xl p-6 w-full max-w-sm relative text-slate-800 shadow-2xl"
             >
               <h4 className="text-sm font-bold mb-4">Book Procurement Center Slot</h4>
 
@@ -1286,7 +1830,7 @@ const FarmerDashboard: React.FC = () => {
                     min={new Date().toISOString().split('T')[0]}
                     value={slotDate}
                     onChange={(e) => setSlotDate(e.target.value)}
-                    className="w-full rounded-xl border border-slate-250 bg-slate-50 dark:bg-slate-950 dark:border-slate-800 py-2 px-3 text-xs focus:outline-none"
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2 px-3 text-xs focus:outline-none focus:border-emerald-500"
                   />
                 </div>
 
@@ -1295,7 +1839,7 @@ const FarmerDashboard: React.FC = () => {
                   <select
                     value={slotTime}
                     onChange={(e) => setSlotTime(e.target.value)}
-                    className="w-full rounded-xl border border-slate-250 bg-slate-50 dark:bg-slate-950 dark:border-slate-800 py-2 px-3 text-xs focus:outline-none"
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2 px-3 text-xs focus:outline-none focus:border-emerald-500"
                   >
                     <option value="10:00 AM">10:00 AM - 12:00 PM</option>
                     <option value="12:00 PM">12:00 PM - 02:00 PM</option>
@@ -1306,7 +1850,7 @@ const FarmerDashboard: React.FC = () => {
 
                 <button
                   type="submit"
-                  className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 rounded-xl text-xs uppercase tracking-wider shadow"
+                  className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 rounded-xl text-xs uppercase tracking-wider shadow cursor-pointer"
                 >
                   Confirm Booking
                 </button>
@@ -1314,7 +1858,7 @@ const FarmerDashboard: React.FC = () => {
 
               <button
                 onClick={() => setBookingOpen(false)}
-                className="absolute right-4 top-4 text-slate-400 hover:text-slate-600 dark:hover:text-white"
+                className="absolute right-4 top-4 text-slate-400 hover:text-slate-650"
               >
                 <X className="h-5 w-5" />
               </button>

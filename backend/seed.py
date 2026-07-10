@@ -25,12 +25,29 @@ def seed_data():
         clean_database(db)
         print("Starting database seeding...")
 
-        # 1. Seed MSP Rates
+        # 1. Seed MSP Rates (at least 20 crops)
         msp_crops = [
             {"crop_name": "Paddy", "msp_rate": 2183.0, "expected_market_price": 2050.0, "gov_url": "https://dacfw.nic.in/msp/paddy"},
-            {"crop_name": "Cotton", "msp_rate": 6620.0, "expected_market_price": 6200.0, "gov_url": "https://dacfw.nic.in/msp/cotton"},
+            {"crop_name": "Wheat", "msp_rate": 2275.0, "expected_market_price": 2400.0, "gov_url": "https://dacfw.nic.in/msp/wheat"},
             {"crop_name": "Maize", "msp_rate": 2090.0, "expected_market_price": 1900.0, "gov_url": "https://dacfw.nic.in/msp/maize"},
-            {"crop_name": "Millets", "msp_rate": 3846.0, "expected_market_price": 3500.0, "gov_url": "https://dacfw.nic.in/msp/millets"}
+            {"crop_name": "Jowar", "msp_rate": 3180.0, "expected_market_price": 3000.0, "gov_url": "https://dacfw.nic.in/msp/jowar"},
+            {"crop_name": "Bajra", "msp_rate": 2500.0, "expected_market_price": 2350.0, "gov_url": "https://dacfw.nic.in/msp/bajra"},
+            {"crop_name": "Ragi", "msp_rate": 3846.0, "expected_market_price": 3600.0, "gov_url": "https://dacfw.nic.in/msp/ragi"},
+            {"crop_name": "Gram", "msp_rate": 5440.0, "expected_market_price": 5300.0, "gov_url": "https://dacfw.nic.in/msp/gram"},
+            {"crop_name": "Tur", "msp_rate": 7000.0, "expected_market_price": 7200.0, "gov_url": "https://dacfw.nic.in/msp/tur"},
+            {"crop_name": "Moong", "msp_rate": 8558.0, "expected_market_price": 8100.0, "gov_url": "https://dacfw.nic.in/msp/moong"},
+            {"crop_name": "Urad", "msp_rate": 6950.0, "expected_market_price": 7100.0, "gov_url": "https://dacfw.nic.in/msp/urad"},
+            {"crop_name": "Groundnut", "msp_rate": 6377.0, "expected_market_price": 6100.0, "gov_url": "https://dacfw.nic.in/msp/groundnut"},
+            {"crop_name": "Sunflower Seed", "msp_rate": 6760.0, "expected_market_price": 6500.0, "gov_url": "https://dacfw.nic.in/msp/sunflower"},
+            {"crop_name": "Soybean", "msp_rate": 4600.0, "expected_market_price": 4450.0, "gov_url": "https://dacfw.nic.in/msp/soybean"},
+            {"crop_name": "Sesamum", "msp_rate": 8635.0, "expected_market_price": 8200.0, "gov_url": "https://dacfw.nic.in/msp/sesamum"},
+            {"crop_name": "Cotton", "msp_rate": 6620.0, "expected_market_price": 6200.0, "gov_url": "https://dacfw.nic.in/msp/cotton"},
+            # Non-MSP / Market Price Demo Crops (clearly distinct in prices)
+            {"crop_name": "Tomato", "msp_rate": 0.0, "expected_market_price": 1800.0, "gov_url": None},
+            {"crop_name": "Onion", "msp_rate": 0.0, "expected_market_price": 2200.0, "gov_url": None},
+            {"crop_name": "Potato", "msp_rate": 0.0, "expected_market_price": 1500.0, "gov_url": None},
+            {"crop_name": "Chilli", "msp_rate": 0.0, "expected_market_price": 19000.0, "gov_url": None},
+            {"crop_name": "Turmeric", "msp_rate": 0.0, "expected_market_price": 12500.0, "gov_url": None}
         ]
         
         for crop in msp_crops:

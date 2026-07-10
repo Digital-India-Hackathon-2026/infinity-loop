@@ -4,6 +4,7 @@ import { LanguageProvider } from './contexts/LanguageContext';
 import LanguageSelector from './pages/LanguageSelector';
 import LandingPage from './pages/LandingPage';
 import Login from './pages/Login';
+import Register from './pages/Register';
 import FarmerDashboard from './pages/FarmerDashboard';
 import OfficerDashboard from './pages/OfficerDashboard';
 import AdminDashboard from './pages/AdminDashboard';
@@ -23,6 +24,9 @@ function App() {
 
             {/* Auth Login Screen */}
             <Route path="/login" element={<Login />} />
+
+            {/* Auth Register Screen */}
+            <Route path="/register" element={<Register />} />
 
             {/* Farmer Dashboard Protected Route */}
             <Route element={<ProtectedRoute allowedRoles={['farmer']} />}>

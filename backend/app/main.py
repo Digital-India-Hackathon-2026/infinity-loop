@@ -1,5 +1,6 @@
 import os
 import datetime
+import os
 import random
 from typing import List, Optional
 from fastapi import FastAPI, Depends, HTTPException, status, UploadFile, File, Form
@@ -116,31 +117,7 @@ def verify_otp(payload: schemas.OTPVerify, db: Session = Depends(get_db)):
     
     if not user:
         if role == "farmer":
-            # Autocreate user for demo simplicity
-            user = models.User(
-                name=f"Farmer {phone[-4:]}",
-                phone=phone,
-                email=f"farmer_{phone[-4:]}@farmer2gov.gov.in",
-                hashed_password=auth.get_password_hash("password123"), # default password
-                role="farmer"
-            )
-            db.add(user)
-            db.commit()
-            db.refresh(user)
-
-            # Create default farmer profile
-            farmer = models.Farmer(
-                user_id=user.id,
-                land_area=5.0, # default acres
-                state="Telangana",
-                district="Warangal",
-                mandal="Hanamkonda",
-                village="Madikonda",
-                language_preference="en"
-            )
-            db.add(farmer)
-            db.commit()
-            db.refresh(farmer)
+            raise HTTPException(status_code=404, detail="Mobile number not registered. Please register first.")
         else:
             raise HTTPException(status_code=404, detail="User account not registered. Admin or Officer must pre-create credentials.")
 
@@ -156,6 +133,44 @@ def verify_otp(payload: schemas.OTPVerify, db: Session = Depends(get_db)):
         "user_id": user.id,
         "name": user.name
     }
+
+@app.post("/api/auth/register/farmer", response_model=dict)
+def register_farmer(payload: schemas.FarmerCreate, db: Session = Depends(get_db)):
+    """Registers a new farmer user and creates their profile."""
+    # Check if user already exists
+    existing_user = db.query(models.User).filter(models.User.phone == payload.phone).first()
+    if existing_user:
+        raise HTTPException(status_code=400, detail="Mobile number already registered. Please login.")
+        
+    # Create user
+    user = models.User(
+        name=payload.name,
+        phone=payload.phone,
+        email=f"farmer_{payload.phone[-4:]}@farmer2gov.gov.in",
+        hashed_password=auth.get_password_hash("password123"), # default password
+        role="farmer"
+    )
+    db.add(user)
+    db.commit()
+    db.refresh(user)
+    
+    # Create farmer profile
+    farmer = models.Farmer(
+        user_id=user.id,
+        land_area=payload.land_area,
+        state=payload.state,
+        district=payload.district,
+        mandal=payload.mandal,
+        village=payload.village,
+        language_preference=payload.language_preference
+    )
+    db.add(farmer)
+    db.commit()
+    db.refresh(farmer)
+    
+    log_audit(db, user.id, "USER_REGISTER", f"Farmer registered successfully for phone {payload.phone}")
+    
+    return {"success": True, "message": "Registration successful. Please login."}
 
 @app.post("/api/auth/login", response_model=schemas.Token)
 def login_email_password(payload: schemas.UserLogin, db: Session = Depends(get_db)):
@@ -227,6 +242,56 @@ def register_crop(payload: schemas.CropRegistrationCreate, current_user: models.
     log_audit(db, current_user.id, "CROP_REGISTRATION", f"Registered crop {payload.crop_name} (ID: {reg_id})")
     
     return crop_reg
+
+@app.post("/api/crops/register-produce", response_model=schemas.CropRegistrationResponse)
+def register_produce(payload: schemas.ProduceRegistrationCreate, current_user: models.User = Depends(auth.require_role(["farmer"])), db: Session = Depends(get_db)):
+    """Farmer registers harvested produce directly."""
+    farmer = db.query(models.Farmer).filter(models.Farmer.user_id == current_user.id).first()
+    if not farmer:
+        raise HTTPException(status_code=404, detail="Farmer profile not found.")
+        
+    year = datetime.datetime.utcnow().year
+    count = db.query(models.CropRegistration).filter(models.CropRegistration.registration_number.like(f"F2G-PROD-{year}-%")).count()
+    prod_id = f"F2G-PROD-{year}-{count + 1:03d}"
+    
+    # Store harvested produce as a crop registration with stage "Harvested"
+    produce_reg = models.CropRegistration(
+        registration_number=prod_id,
+        farmer_id=farmer.id,
+        crop_name=payload.produce_name,
+        crop_stage="Harvested",
+        expected_harvest_month=payload.harvest_date,  # Map harvest_date to expected_harvest_month
+        expected_quantity=payload.expected_quantity,
+        land_area=0.0,  # Ready produce doesn't strictly have a growing land area, default 0
+        state=payload.state,
+        district=payload.district,
+        mandal=payload.mandal,
+        village=payload.village,
+        phone_number=payload.phone_number,
+        status="Registered",
+        
+        # New produce-specific fields
+        produce_category=payload.produce_category,
+        quantity_unit=payload.quantity_unit,
+        pin_code=payload.pin_code,
+        harvest_date=payload.harvest_date,
+        produce_ready_status=payload.produce_ready_status
+    )
+    db.add(produce_reg)
+    db.commit()
+    db.refresh(produce_reg)
+    
+    add_notification(
+        db, 
+        current_user.id, 
+        "Produce Registration Successful", 
+        f"Your harvested produce {prod_id} has been registered successfully.", 
+        "general"
+    )
+    
+    log_audit(db, current_user.id, "PRODUCE_REGISTRATION", f"Registered produce {payload.produce_name} (ID: {prod_id})")
+    
+    return produce_reg
 
 @app.get("/api/crops/my-registrations", response_model=List[schemas.CropRegistrationResponse])
 def get_my_registrations(current_user: models.User = Depends(auth.require_role(["farmer"])), db: Session = Depends(get_db)):
@@ -464,6 +529,85 @@ def book_procurement_slot(
     log_audit(db, current_user.id, "SLOT_BOOKING", f"Booked slot for {crop_reg.registration_number} on {payload.slot_date}")
 
     return procurement
+
+
+def build_procurement_timeline(reg_status: str, proc_status: str, pay_status: str) -> List[dict]:
+    """Build procurement timeline steps for farmer dashboard."""
+    steps = ["Slot Booked", "Weigh-In Completed", "Payment Initiated", "Payment Completed"]
+
+    if pay_status == "Completed" or reg_status == "Payment Completed":
+        current = 3
+    elif pay_status in ("Initiated", "Processing") or reg_status in ("Payment Initiated", "Procured"):
+        current = 2 if proc_status == "Completed" else 1
+    elif proc_status == "Completed":
+        current = 2
+    else:
+        current = 0
+
+    return [
+        {"step": label, "completed": idx <= current, "current": idx == current}
+        for idx, label in enumerate(steps)
+    ]
+
+
+@app.get("/api/procurements/my", response_model=List[schemas.FarmerProcurementDetailResponse])
+def get_my_procurements(
+    current_user: models.User = Depends(auth.require_role(["farmer"])),
+    db: Session = Depends(get_db),
+):
+    """Fetch all procurement records for the logged-in farmer."""
+    farmer = db.query(models.Farmer).filter(models.Farmer.user_id == current_user.id).first()
+    if not farmer:
+        return []
+
+    procurements = (
+        db.query(models.Procurement)
+        .join(models.CropRegistration, models.Procurement.registration_id == models.CropRegistration.id)
+        .filter(models.CropRegistration.farmer_id == farmer.id)
+        .order_by(models.Procurement.created_at.desc())
+        .all()
+    )
+
+    results = []
+    for proc in procurements:
+        crop_reg = proc.registration
+        if not crop_reg:
+            continue
+
+        centre_name = proc.centre.name if proc.centre else "Not Assigned"
+        payment = proc.payment
+        sample = crop_reg.sample_verification
+
+        if sample and sample.grain_quality:
+            product = f"{sample.grain_quality} {crop_reg.crop_name}"
+        else:
+            product = crop_reg.crop_name
+
+        quantity = proc.accepted_quantity if proc.status == "Completed" and proc.accepted_quantity > 0 else proc.declared_quantity
+        pay_status = payment.status if payment else "Pending"
+
+        results.append({
+            "id": proc.id,
+            "procurement_number": proc.procurement_number,
+            "registration_number": crop_reg.registration_number,
+            "crop_name": crop_reg.crop_name,
+            "product": product,
+            "quantity": quantity,
+            "centre_name": centre_name,
+            "status": crop_reg.status,
+            "officer_remarks": sample.remarks if sample else None,
+            "payment_status": pay_status,
+            "slot_date": proc.slot_date,
+            "slot_time": proc.slot_time,
+            "total_amount": proc.total_amount if proc.total_amount > 0 else (payment.amount if payment else 0.0),
+            "transaction_reference": payment.transaction_reference if payment else None,
+            "expected_payment_date": payment.expected_date if payment else None,
+            "payment_date": payment.payment_date if payment else None,
+            "timeline": build_procurement_timeline(crop_reg.status, proc.status, pay_status),
+            "created_at": proc.created_at,
+        })
+
+    return results
 
 
 # --- PROCUREMENT OFFICER FLOW ---
