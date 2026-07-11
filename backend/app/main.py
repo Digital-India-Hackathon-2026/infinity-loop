@@ -191,6 +191,43 @@ def login_email_password(payload: schemas.UserLogin, db: Session = Depends(get_d
     }
 
 
+@app.get("/api/auth/me")
+def get_current_user_profile(current_user: models.User = Depends(auth.get_current_user), db: Session = Depends(get_db)):
+    """Fetch profile of the logged-in user (farmer, officer, admin, customer)."""
+    result = {
+        "id": current_user.id,
+        "name": current_user.name,
+        "email": current_user.email,
+        "phone": current_user.phone,
+        "role": current_user.role
+    }
+    if current_user.role == "farmer":
+        farmer = db.query(models.Farmer).filter(models.Farmer.user_id == current_user.id).first()
+        if farmer:
+            result.update({
+                "farmer_id": farmer.id,
+                "land_area": farmer.land_area,
+                "state": farmer.state,
+                "district": farmer.district,
+                "mandal": farmer.mandal,
+                "village": farmer.village,
+                "language_preference": farmer.language_preference
+            })
+    elif current_user.role == "customer":
+        customer = db.query(models.Customer).filter(models.Customer.user_id == current_user.id).first()
+        if customer:
+            result.update({
+                "customer_id": customer.id,
+                "address": customer.address,
+                "state": customer.state,
+                "district": customer.district,
+                "pincode": customer.pincode,
+                "profile_photo": customer.profile_photo
+            })
+    return result
+
+
+
 # --- CROP REGISTRATION (FARMER FLOW) ---
 
 @app.post("/api/crops/register", response_model=schemas.CropRegistrationResponse)
@@ -343,6 +380,21 @@ def upload_produce_images(
     if crop_reg.farmer_id != farmer.id:
         raise HTTPException(status_code=403, detail="Access denied.")
 
+    # Delete existing of same image_type if present
+    existing_img = db.query(models.ProduceImage).filter(
+        models.ProduceImage.registration_id == id,
+        models.ProduceImage.image_type == image_type
+    ).first()
+    if existing_img:
+        try:
+            old_file_path = existing_img.image_url.lstrip("/")
+            if os.path.exists(old_file_path):
+                os.remove(old_file_path)
+        except Exception:
+            pass
+        db.delete(existing_img)
+        db.commit()
+
     # Save physical file
     file_extension = os.path.splitext(file.filename)[1]
     filename = f"{crop_reg.registration_number}_{image_type}{file_extension}"
@@ -376,10 +428,48 @@ def upload_produce_images(
     db.refresh(prod_image)
     return db.query(models.ProduceImage).filter(models.ProduceImage.registration_id == id).all()
 
+
 @app.get("/api/crops/{id}/images", response_model=List[schemas.ProduceImageResponse])
 def get_crop_images(id: int, current_user: models.User = Depends(auth.get_current_user), db: Session = Depends(get_db)):
     """Retrieve all uploaded produce images for a crop registration."""
     return db.query(models.ProduceImage).filter(models.ProduceImage.registration_id == id).all()
+
+
+@app.delete("/api/crops/{id}/images/{image_type}")
+def delete_crop_image(id: int, image_type: str, current_user: models.User = Depends(auth.get_current_user), db: Session = Depends(get_db)):
+    """Deletes a produce image and resets the crop status back to Registered if it was close_up."""
+    crop_reg = db.query(models.CropRegistration).filter(models.CropRegistration.id == id).first()
+    if not crop_reg:
+        raise HTTPException(status_code=404, detail="Crop registration not found.")
+    
+    if current_user.role == "farmer":
+        farmer = db.query(models.Farmer).filter(models.Farmer.user_id == current_user.id).first()
+        if crop_reg.farmer_id != farmer.id:
+            raise HTTPException(status_code=403, detail="Access denied.")
+
+    existing_img = db.query(models.ProduceImage).filter(
+        models.ProduceImage.registration_id == id,
+        models.ProduceImage.image_type == image_type
+    ).first()
+    if not existing_img:
+        raise HTTPException(status_code=404, detail="Image not found.")
+        
+    try:
+        old_file_path = existing_img.image_url.lstrip("/")
+        if os.path.exists(old_file_path):
+            os.remove(old_file_path)
+    except Exception:
+        pass
+    db.delete(existing_img)
+    
+    if image_type == "close_up":
+        crop_reg.status = "Registered"
+        if crop_reg.ai_assessment:
+            db.delete(crop_reg.ai_assessment)
+            
+    db.commit()
+    return {"success": True}
+
 
 @app.post("/api/crops/{id}/ai-assess", response_model=schemas.AIAssessmentResponse)
 def trigger_ai_assessment(
@@ -637,10 +727,11 @@ def get_officer_requests(current_user: models.User = Depends(auth.require_role([
     )
     
     # Filter by officer district if centre is defined
-    if officer and officer.centre:
-        query = query.filter(models.CropRegistration.district == officer.centre.district)
+    if officer and officer.centre and officer.centre.district:
+        query = query.filter(models.CropRegistration.district.ilike(officer.centre.district.strip()))
         
     results = query.all()
+
     
     requests_list = []
     for reg, farmer, name, score in results:
@@ -735,6 +826,9 @@ def complete_procurement(
     if not officer:
         raise HTTPException(status_code=404, detail="Officer profile not found.")
 
+    # Compute amount
+    total_amount = payload.accepted_quantity * payload.msp_rate
+
     procurement = db.query(models.Procurement).filter(models.Procurement.registration_id == id).first()
     if not procurement:
         # Create procurement row if slot wasn't booked previously (flexibility for demo)
@@ -744,31 +838,34 @@ def complete_procurement(
             registration_id=id,
             centre_id=officer.centre_id,
             declared_quantity=payload.declared_quantity,
+            actual_quantity=payload.actual_quantity,
+            accepted_quantity=payload.accepted_quantity,
+            msp_rate=payload.msp_rate,
+            total_amount=total_amount,
             slot_date=payload.slot_date,
             slot_time=payload.slot_time,
+            status="Completed"
         )
         db.add(procurement)
         db.commit()
         db.refresh(procurement)
+    else:
+        # Update procurement weigh-in details
+        procurement.officer_id = officer.id
+        procurement.centre_id = officer.centre_id or procurement.centre_id
+        procurement.actual_quantity = payload.actual_quantity
+        procurement.accepted_quantity = payload.accepted_quantity
+        procurement.msp_rate = payload.msp_rate
+        procurement.total_amount = total_amount
+        procurement.status = "Completed"
 
-    # Compute amount
-    total_amount = payload.accepted_quantity * payload.msp_rate
-
-    # Update procurement weigh-in details
-    procurement.officer_id = officer.id
-    procurement.centre_id = officer.centre_id or procurement.centre_id
-    procurement.actual_quantity = payload.actual_quantity
-    procurement.accepted_quantity = payload.accepted_quantity
-    procurement.msp_rate = payload.msp_rate
-    procurement.total_amount = total_amount
-    procurement.status = "Completed"
-    
     # Generate mock digital receipt link
     procurement.digital_receipt_url = f"/api/procurements/{procurement.id}/receipt"
 
     # Update crop status
     crop_reg.status = "Procured"
     db.commit()
+
 
     # Update payment record linked to this procurement
     payment = db.query(models.Payment).filter(models.Payment.procurement_id == procurement.id).first()

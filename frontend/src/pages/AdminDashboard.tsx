@@ -4,7 +4,7 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { 
   Users, BarChart3, TrendingUp, Landmark, ShieldCheck, 
   MapPin, FileText, PieChart as PieIcon, LineChart as LineIcon, 
-  Calendar, Layers, LogOut 
+  Calendar, Layers, LogOut, Bell, Languages
 } from 'lucide-react';
 import { 
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, 
@@ -23,7 +23,9 @@ const COLORS = ['#10b981', '#f59e0b', '#3b82f6', '#8b5cf6', '#ec4899'];
 
 const AdminDashboard: React.FC = () => {
   const { logout, apiFetch, name } = useAuth();
-  const { t } = useLanguage();
+  const { t, language, setLanguage } = useLanguage();
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [notifications, setNotifications] = useState<any[]>([]);
 
   // Core Data States
   const [metrics, setMetrics] = useState<Metric | null>(null);
@@ -50,6 +52,9 @@ const AdminDashboard: React.FC = () => {
       setRecentRegs(data.recent_registrations);
       setStatusDist(data.status_distribution || []);
       setPaymentDist(data.payment_distribution || []);
+
+      const notifs = await apiFetch('/api/notifications');
+      setNotifications(notifs);
     } catch (e) {
       console.error(e);
     }
@@ -74,9 +79,79 @@ const AdminDashboard: React.FC = () => {
           <span className="text-xs font-semibold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 px-3 py-1.5 rounded-lg border border-emerald-500/10">
             Director Desk: <span className="font-bold">{name}</span>
           </span>
+
+          {/* Notification Bell Badge */}
+          <div className="relative">
+            <button
+              onClick={() => setShowNotifications(!showNotifications)}
+              className="relative p-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-550 dark:text-slate-455 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors border-none flex items-center justify-center cursor-pointer"
+            >
+              <Bell className="h-4 w-4" />
+              {notifications.filter(n => !n.is_read).length > 0 && (
+                <span className="absolute -top-1 -right-1 h-3.5 w-3.5 bg-red-500 rounded-full text-[8px] font-bold text-white flex items-center justify-center">
+                  {notifications.filter(n => !n.is_read).length}
+                </span>
+              )}
+            </button>
+            
+            {showNotifications && (
+              <div className="absolute right-0 mt-2 w-72 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-2 rounded-2xl shadow-xl z-50 text-slate-700 dark:text-slate-200 max-h-80 overflow-y-auto">
+                <div className="text-xs font-bold text-slate-450 p-2 border-b dark:border-slate-800 uppercase tracking-wider">Notifications</div>
+                {notifications.length === 0 ? (
+                  <div className="text-xs text-slate-400 text-center py-4">No notifications</div>
+                ) : (
+                  notifications.map((n) => (
+                    <div 
+                      key={n.id} 
+                      onClick={async () => {
+                        if (!n.is_read) {
+                          try {
+                            await apiFetch(`/api/notifications/${n.id}/read`, { method: 'POST' });
+                            setNotifications(prev => prev.map(item => item.id === n.id ? { ...item, is_read: true } : item));
+                          } catch (e) {
+                            console.error(e);
+                          }
+                        }
+                      }}
+                      className={`p-2 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-xl transition-colors cursor-pointer border-b border-slate-50 dark:border-slate-800 last:border-none flex gap-2 ${!n.is_read ? 'bg-emerald-50/40 dark:bg-emerald-950/20' : ''}`}
+                    >
+                      <div className="flex-1">
+                        <div className="text-xs font-bold text-slate-800 dark:text-slate-200 flex justify-between">
+                          <span>{n.title}</span>
+                          {!n.is_read && <span className="h-1.5 w-1.5 bg-emerald-600 rounded-full mt-1.5" />}
+                        </div>
+                        <div className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">{n.message}</div>
+                        <div className="text-[8px] text-slate-400 dark:text-slate-500 font-mono mt-1">{new Date(n.created_at).toLocaleString()}</div>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Languages Selector */}
+          <div className="relative group">
+            <button className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-2.5 py-1.5 rounded-lg text-xs font-bold hover:bg-slate-200 dark:hover:bg-slate-700 cursor-pointer">
+              <Languages className="h-3.5 w-3.5 text-emerald-600" />
+              <span className="uppercase">{language}</span>
+            </button>
+            <div className="absolute right-0 mt-1 hidden w-28 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-1 rounded-lg shadow-lg group-hover:block z-50">
+              {['en', 'te', 'hi'].map((l) => (
+                <button
+                  key={l}
+                  onClick={() => setLanguage(l as any)}
+                  className="w-full text-left px-3 py-2 text-xs font-bold hover:bg-slate-50 dark:hover:bg-slate-805 text-slate-705 dark:text-slate-300 rounded-md bg-transparent border-none cursor-pointer"
+                >
+                  {l === 'en' ? 'English' : l === 'te' ? 'తెలుగు' : 'हिंदी'}
+                </button>
+              ))}
+            </div>
+          </div>
+
           <button 
             onClick={logout}
-            className="flex items-center gap-1 bg-red-50 text-red-600 border border-red-200 dark:bg-red-950/30 dark:border-red-950 dark:text-red-400 px-3 py-1.5 rounded-lg text-xs font-bold"
+            className="flex items-center gap-1 bg-red-50 text-red-650 border border-red-200 dark:bg-red-950/30 dark:border-red-950 dark:text-red-400 px-3 py-1.5 rounded-lg text-xs font-bold cursor-pointer"
           >
             <LogOut className="h-4.5 w-4.5" />
             Logout

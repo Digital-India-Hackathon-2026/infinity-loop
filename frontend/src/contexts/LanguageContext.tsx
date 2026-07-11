@@ -26,7 +26,7 @@ const translations: Record<Language, Record<string, string>> = {
     password: "Password",
     login_btn: "Login",
     logout: "Logout",
-    
+
     // Landing Page sections
     hero_title: "Transparent & Direct Government Procurement",
     hero_subtitle: "An AI-powered coordination platform helping Indian farmers register pre-harvest crops, verify produce quality with computer vision, and secure direct government payments.",
@@ -90,7 +90,7 @@ const translations: Record<Language, Record<string, string>> = {
     voice_btn_start: "Tap to Speak",
     voice_btn_listening: "Listening...",
     voice_prompt: "Speak now (e.g., 'Is my payment completed?', 'నా డబ్బులు వచ్చాయా?', 'मेरा भुगतान हो गया क्या?')",
-    
+
     // Status mapping
     status_registered: "Registered",
     status_uploaded: "Images Uploaded",
@@ -195,9 +195,9 @@ const translations: Record<Language, Record<string, string>> = {
     confirm_booking_btn: "Confirm Slot Booking",
     pricing_hub_title: "Agricultural Pricing & MSP Information Hub",
     pricing_hub_desc: "Review government Minimum Support Prices (MSP) and local market pricing updates.",
-    demo_warning_banner: "Demo Price Data. Values are for simulation/hackathon testing.",
+    demo_warning_banner: "Demo Price Data. Values are for reference....",
     price_label: "Price",
-    
+
     // Crops translations
     crop_paddy: "Paddy",
     crop_wheat: "Wheat",
@@ -219,7 +219,7 @@ const translations: Record<Language, Record<string, string>> = {
     crop_potato: "Potato",
     crop_chilli: "Chilli",
     crop_turmeric: "Turmeric",
-    
+
     // Crop Info & Descriptions translations
     crop_paddy_info: "Primary kharif cereal. Government guaranteed MSP.",
     crop_wheat_info: "Rabi staple crop. Government guaranteed MSP.",
@@ -241,14 +241,14 @@ const translations: Record<Language, Record<string, string>> = {
     crop_potato_info: "Tubers cash crop. Market Price / Demo Data.",
     crop_chilli_info: "Red spice crop. Market Price / Demo Data.",
     crop_turmeric_info: "Spices cash crop. Market Price / Demo Data.",
-    
+
     // Category key translations
     cat_grains: "Grains",
     cat_pulses: "Pulses",
     cat_vegetables: "Vegetables",
     cat_oilseeds: "Oilseeds",
     cat_commercial: "Commercial Crops",
-    
+
     // Units translations
     unit_qtl: "per Quintal",
   },
@@ -268,7 +268,7 @@ const translations: Record<Language, Record<string, string>> = {
     password: "పాస్వర్డ్",
     login_btn: "లాగిన్",
     logout: "లాగ్ అవుట్",
-    
+
     hero_title: "పారదర్శక మరియు ప్రత్యక్ష ప్రభుత్వ కొనుగోలు",
     hero_subtitle: "భారతీయ రైతులకు పంట నమోదు, కంప్యూటర్ విజన్ నాణ్యత తనిఖీ మరియు నేరుగా ప్రభుత్వ చెల్లింపులు అందజేసే ఒక వినూత్న డిజిటల్ పబ్లిక్ ఇన్ఫ్రాస్ట్రక్చర్.",
     get_started: "ప్రారంభించండి",
@@ -456,7 +456,7 @@ const translations: Record<Language, Record<string, string>> = {
     crop_potato: "బంగాళదుంపలు",
     crop_chilli: "మిరపకాయలు",
     crop_turmeric: "పసుపు",
-    
+
     crop_paddy_info: "ముఖ్యమైన ఖరీఫ్ పంట. ప్రభుత్వ మద్దతు ధర లభిస్తుంది.",
     crop_wheat_info: "రబీ ముఖ్యమైన పంట. ప్రభుత్వ మద్దతు ధర లభిస్తుంది.",
     crop_maize_info: "పశుగ్రాసం మరియు ఆహారంగా ఉపయోగించే పంట. ప్రభుత్వ మద్దతు ధర ఉంటుంది.",
@@ -477,7 +477,7 @@ const translations: Record<Language, Record<string, string>> = {
     crop_potato_info: "దుంపల పంట. మార్కెట్ ధర డెమో డేటా.",
     crop_chilli_info: "మిరప పంట. మార్కెట్ ధర డెమో డేటా.",
     crop_turmeric_info: "పసుపు పంట. మార్కెట్ ధర డెమో డేటా.",
-    
+
     cat_grains: "ధాన్యాలు",
     cat_pulses: "పప్పుధాన్యాలు",
     cat_vegetables: "కూరగాయలు",
@@ -501,7 +501,7 @@ const translations: Record<Language, Record<string, string>> = {
     password: "पासवर्ड",
     login_btn: "लॉगिन",
     logout: "लॉग आउट",
-    
+
     hero_title: "पारदर्शी और प्रत्यक्ष सरकारी खरीद",
     hero_subtitle: "भारतीय किसानों के लिए एक उन्नत डिजिटल पब्लिक इंफ्रास्ट्रक्चर जो फसल पूर्व पंजीकरण, कंप्यूटर विज़न आधारित गुणवत्ता परीक्षण और सीधे बैंक खाते में भुगतान सुनिश्चित करता है।",
     get_started: "शुरू करें",
@@ -668,7 +668,7 @@ const translations: Record<Language, Record<string, string>> = {
     pricing_hub_desc: "सरकारी न्यूनतम समर्थन मूल्य (MSP) और स्थानीय बाजार मूल्य अपडेट की समीक्षा करें।",
     demo_warning_banner: "मूल्य डेटा केवल डेमो परीक्षण के लिए है।",
     price_label: "मूल्य",
-    
+
     crop_paddy: "धान",
     crop_wheat: "गेहूं",
     crop_maize: "मक्का",
@@ -689,7 +689,7 @@ const translations: Record<Language, Record<string, string>> = {
     crop_potato: "आलू",
     crop_chilli: "मिर्च",
     crop_turmeric: "हल्दी",
-    
+
     crop_paddy_info: "प्रमुख खरीफ अनाज। सरकारी न्यूनतम समर्थन मूल्य (MSP) गारंटी।",
     crop_wheat_info: "रबी की प्रमुख फसल। सरकारी न्यूनतम समर्थन मूल्य (MSP) गारंटी।",
     crop_maize_info: "मोटा अनाज। सरकारी न्यूनतम समर्थन मूल्य (MSP)।",
@@ -710,7 +710,7 @@ const translations: Record<Language, Record<string, string>> = {
     crop_potato_info: "कंद फसल। बाजार मूल्य डेमो डेटा।",
     crop_chilli_info: "मिर्च मसाला फसल। बाजार मूल्य डेमो डेटा।",
     crop_turmeric_info: "हल्दी नकदी फसल। बाजार मूल्य डेमो डेटा।",
-    
+
     cat_grains: "अनाज",
     cat_pulses: "दालें",
     cat_vegetables: "सब्जियां",
@@ -723,19 +723,16 @@ const translations: Record<Language, Record<string, string>> = {
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
 
 export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [language, setLanguageState] = useState<Language>('en');
-
-  useEffect(() => {
+  const [language, setLanguageState] = useState<Language>(() => {
     const savedLang = localStorage.getItem('f2g_lang') as Language;
-    if (savedLang && ['en', 'te', 'hi'].includes(savedLang)) {
-      setLanguageState(savedLang);
-    }
-  }, []);
+    return (savedLang && ['en', 'te', 'hi'].includes(savedLang)) ? savedLang : 'en';
+  });
 
   const setLanguage = (lang: Language) => {
     setLanguageState(lang);
     localStorage.setItem('f2g_lang', lang);
   };
+
 
   const t = (key: string): string => {
     return translations[language][key] || translations['en'][key] || key;

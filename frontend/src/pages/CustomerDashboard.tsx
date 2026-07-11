@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { useLanguage } from '../contexts/LanguageContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   ShoppingBag, Search, Filter, Star, Heart, MapPin,
-  Award, User, LogOut, Loader2, Sparkles
+  Award, User, LogOut, Loader2, Sparkles, Bell, Languages
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
@@ -42,6 +43,7 @@ const categoriesList = [
 const CustomerDashboard: React.FC = () => {
   const navigate = useNavigate();
   const { name, apiFetch, logout } = useAuth();
+  const { t, language, setLanguage } = useLanguage();
 
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(false);
@@ -49,6 +51,8 @@ const CustomerDashboard: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [wishlistIds, setWishlistIds] = useState<number[]>([]);
   const [cartCount, setCartCount] = useState(0);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [notifications, setNotifications] = useState<any[]>([]);
 
   // Filters state
   const [showFilters, setShowFilters] = useState(false);
@@ -62,6 +66,19 @@ const CustomerDashboard: React.FC = () => {
     fetchWishlist();
     fetchCart();
   }, [selectedCategory, organicFilter, governmentVerifiedFilter]);
+
+  useEffect(() => {
+    fetchNotifications();
+  }, []);
+
+  const fetchNotifications = async () => {
+    try {
+      const data = await apiFetch('/api/notifications');
+      setNotifications(data);
+    } catch (e) {
+      console.error(e);
+    }
+  };
 
   const fetchProducts = async () => {
     setLoading(true);
@@ -223,6 +240,75 @@ const CustomerDashboard: React.FC = () => {
             )}
           </button>
 
+          {/* Notification Bell Badge */}
+          <div className="relative">
+            <button
+              onClick={() => setShowNotifications(!showNotifications)}
+              className="relative p-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-full transition-colors border-none flex items-center justify-center cursor-pointer text-slate-600 dark:text-slate-400"
+            >
+              <Bell className="h-4.5 w-4.5" />
+              {notifications.filter(n => !n.is_read).length > 0 && (
+                <span className="absolute -top-1 -right-1 h-3.5 w-3.5 bg-red-500 rounded-full text-[8px] font-bold text-white flex items-center justify-center">
+                  {notifications.filter(n => !n.is_read).length}
+                </span>
+              )}
+            </button>
+            
+            {showNotifications && (
+              <div className="absolute right-0 mt-2 w-72 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-2 rounded-2xl shadow-xl z-50 text-slate-700 dark:text-slate-200 max-h-80 overflow-y-auto">
+                <div className="text-xs font-bold text-slate-450 p-2 border-b dark:border-slate-800 uppercase tracking-wider">Notifications</div>
+                {notifications.length === 0 ? (
+                  <div className="text-xs text-slate-400 text-center py-4">No notifications</div>
+                ) : (
+                  notifications.map((n) => (
+                    <div 
+                      key={n.id} 
+                      onClick={async () => {
+                        if (!n.is_read) {
+                          try {
+                            await apiFetch(`/api/notifications/${n.id}/read`, { method: 'POST' });
+                            setNotifications(prev => prev.map(item => item.id === n.id ? { ...item, is_read: true } : item));
+                          } catch (e) {
+                            console.error(e);
+                          }
+                        }
+                      }}
+                      className={`p-2 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-xl transition-colors cursor-pointer border-b border-slate-50 dark:border-slate-800 last:border-none flex gap-2 ${!n.is_read ? 'bg-emerald-50/40 dark:bg-emerald-950/20' : ''}`}
+                    >
+                      <div className="flex-1">
+                        <div className="text-xs font-bold text-slate-800 dark:text-slate-200 flex justify-between">
+                          <span>{n.title}</span>
+                          {!n.is_read && <span className="h-1.5 w-1.5 bg-emerald-600 rounded-full mt-1.5" />}
+                        </div>
+                        <div className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">{n.message}</div>
+                        <div className="text-[8px] text-slate-400 dark:text-slate-500 font-mono mt-1">{new Date(n.created_at).toLocaleString()}</div>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Languages Selector */}
+          <div className="relative group">
+            <button className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-2.5 py-1.5 rounded-full text-xs font-bold hover:bg-slate-200 dark:hover:bg-slate-700 cursor-pointer text-slate-700 dark:text-slate-300">
+              <Languages className="h-3.5 w-3.5 text-emerald-600" />
+              <span className="uppercase">{language}</span>
+            </button>
+            <div className="absolute right-0 mt-1 hidden w-28 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-1 rounded-lg shadow-lg group-hover:block z-50">
+              {['en', 'te', 'hi'].map((l) => (
+                <button
+                  key={l}
+                  onClick={() => setLanguage(l as any)}
+                  className="w-full text-left px-3 py-2 text-xs font-bold hover:bg-slate-50 dark:hover:bg-slate-805 text-slate-705 dark:text-slate-300 rounded-md bg-transparent border-none cursor-pointer"
+                >
+                  {l === 'en' ? 'English' : l === 'te' ? 'తెలుగు' : 'हिंदी'}
+                </button>
+              ))}
+            </div>
+          </div>
+
           <button 
             onClick={() => navigate('/customer-profile')}
             className="flex items-center gap-2 bg-slate-100 dark:bg-slate-800 px-3 py-1.5 rounded-full text-xs font-bold border border-slate-200 dark:border-slate-700 hover:bg-slate-200 cursor-pointer"
@@ -233,10 +319,9 @@ const CustomerDashboard: React.FC = () => {
 
           <button 
             onClick={logout}
-            className="p-2 bg-red-50 dark:bg-red-950/20 text-red-655 hover:bg-red-100 rounded-full transition-all cursor-pointer"
+            className="p-2 bg-red-50 dark:bg-red-950/20 text-red-650 hover:bg-red-100 rounded-full transition-all cursor-pointer border-none flex items-center justify-center"
             title="Log Out"
           >
-            <LogOut className="h-4 w-4" />
           </button>
         </div>
       </header>

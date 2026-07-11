@@ -3,11 +3,11 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { motion } from 'framer-motion';
-import { Sprout, Lock, KeyRound, User, Users, ShieldAlert, ArrowLeft, CheckCircle, ShoppingBag } from 'lucide-react';
+import { Sprout, Lock, KeyRound, User, Users, ShieldAlert, ArrowLeft, CheckCircle, ShoppingBag, Languages } from 'lucide-react';
 
 const Login: React.FC = () => {
   const { login } = useAuth();
-  const { t } = useLanguage();
+  const { t, language, setLanguage } = useLanguage();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -131,11 +131,32 @@ const Login: React.FC = () => {
       {/* Back Button */}
       <button 
         onClick={() => navigate('/landing')}
-        className="absolute left-6 top-6 flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-900 transition-colors cursor-pointer"
+        className="absolute top-6 left-6 flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-slate-805 cursor-pointer bg-white border px-3 py-1.5 rounded-full shadow-sm"
       >
         <ArrowLeft className="h-4 w-4" />
         Back to Landing
       </button>
+
+      {/* Languages Selector */}
+      <div className="absolute top-6 right-6 z-50">
+        <div className="relative group">
+          <button className="flex items-center gap-1 bg-white border border-slate-200 px-3 py-1.5 rounded-full text-xs font-bold hover:bg-slate-50 shadow-sm cursor-pointer">
+            <Languages className="h-3.5 w-3.5 text-emerald-600" />
+            <span className="uppercase">{language}</span>
+          </button>
+          <div className="absolute right-0 mt-1 hidden w-28 bg-white border border-slate-200 p-1 rounded-lg shadow-lg group-hover:block">
+            {['en', 'te', 'hi'].map((l) => (
+              <button
+                key={l}
+                onClick={() => setLanguage(l as any)}
+                className="w-full text-left px-3 py-2 text-xs font-bold hover:bg-slate-50 text-slate-700 rounded-md bg-transparent border-none cursor-pointer"
+              >
+                {l === 'en' ? 'English' : l === 'te' ? 'తెలుగు' : 'हिंदी'}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
 
       <div className="w-full max-w-md relative z-10">
         {/* Emblem logo */}

@@ -87,8 +87,8 @@ const mspProduceItems = [
 const FarmerDashboard: React.FC = () => {
   const { logout, apiFetch, name } = useAuth();
   const { t, language, setLanguage } = useLanguage();
-
-
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [profile, setProfile] = useState<any>(null);
 
   // Navigation / Tab states
   const [activeTab, setActiveTab] = useState<'overview' | 'register' | 'register-produce' | 'msp' | 'procurement' | 'booking' | 'marketplace'>('overview');
@@ -151,6 +151,7 @@ const FarmerDashboard: React.FC = () => {
 
   // Slot Booking states
   const [bookingOpen, setBookingOpen] = useState(false);
+  const [imageSourceModalOpen, setImageSourceModalOpen] = useState(false);
   const [slotDate, setSlotDate] = useState('');
   const [slotTime, setSlotTime] = useState('09:00 AM - 11:00 AM');
   const [selectedBookingRegId, setSelectedBookingRegId] = useState('');
@@ -365,6 +366,29 @@ const FarmerDashboard: React.FC = () => {
       // Retrieve notifications
       const notifs = await apiFetch('/api/notifications');
       setNotifications(notifs);
+
+      // Retrieve profile
+      const userProfile = await apiFetch('/api/auth/me');
+      setProfile(userProfile);
+      if (userProfile) {
+        setFormData(prev => ({
+          ...prev,
+          state: userProfile.state || prev.state,
+          district: userProfile.district || prev.district,
+          mandal: userProfile.mandal || prev.mandal,
+          village: userProfile.village || prev.village,
+          phone_number: userProfile.phone || prev.phone_number
+        }));
+        setProduceFormData(prev => ({
+          ...prev,
+          farmer_name: userProfile.name || prev.farmer_name,
+          phone_number: userProfile.phone || prev.phone_number,
+          state: userProfile.state || prev.state,
+          district: userProfile.district || prev.district,
+          mandal: userProfile.mandal || prev.mandal,
+          village: userProfile.village || prev.village
+        }));
+      }
     } catch (err) {
       console.error('Error loading dashboard:', err);
     } finally {
@@ -387,6 +411,7 @@ const FarmerDashboard: React.FC = () => {
   const handleSelectReg = async (reg: Registration) => {
     setSelectedReg(reg);
     setAiReport(null);
+    setCapturedImages({}); // Clear images so we don't reuse previous crop's photos
 
     // Check status-based assets
     if (['AI Reviewed', 'Sample Requested', 'Approved', 'Slot Booked', 'Procured', 'Payment Completed'].includes(reg.status)) {
@@ -607,9 +632,42 @@ const FarmerDashboard: React.FC = () => {
     }
   };
 
+
+
+  const handleDeleteImage = async (imageType: string) => {
+    if (!selectedReg) return;
+    try {
+      await apiFetch(`/api/crops/${selectedReg.id}/images/${imageType}`, {
+        method: 'DELETE'
+      });
+      setCapturedImages(prev => {
+        const next = { ...prev };
+        delete next[imageType];
+        return next;
+      });
+      fetchDashboardData();
+      const list = await apiFetch('/api/crops/my-registrations');
+      const current = list.find((r: any) => r.id === selectedReg.id);
+      if (current) setSelectedReg(current);
+    } catch (err: any) {
+      alert(err.message || 'Failed to delete image');
+    }
+  };
+
   const handleLocalImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !selectedReg) return;
+
+    // Validate type (must be image)
+    if (!file.type.startsWith('image/')) {
+      alert('Invalid file format. Please upload an image (JPG, PNG, WEBP).');
+      return;
+    }
+    // Validate size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      alert('File size exceeds the 5MB limit.');
+      return;
+    }
 
     try {
       const reader = new FileReader();
@@ -880,12 +938,52 @@ const FarmerDashboard: React.FC = () => {
           </span>
 
           {/* Notification Bell Badge */}
-          <div className="relative p-1.5 rounded-lg bg-slate-100 text-slate-550 hover:bg-slate-200 transition-colors cursor-pointer">
-            <Bell className="h-4 w-4" />
-            {notifications.filter(n => !n.is_read).length > 0 && (
-              <span className="absolute -top-1 -right-1 h-3.5 w-3.5 bg-red-500 rounded-full text-[8px] font-bold text-white flex items-center justify-center">
-                {notifications.filter(n => !n.is_read).length}
-              </span>
+          <div className="relative">
+            <button
+              onClick={() => setShowNotifications(!showNotifications)}
+              className="relative p-1.5 rounded-lg bg-slate-100 text-slate-550 hover:bg-slate-200 transition-colors cursor-pointer border-none flex items-center justify-center"
+            >
+              <Bell className="h-4 w-4" />
+              {notifications.filter(n => !n.is_read).length > 0 && (
+                <span className="absolute -top-1 -right-1 h-3.5 w-3.5 bg-red-500 rounded-full text-[8px] font-bold text-white flex items-center justify-center">
+                  {notifications.filter(n => !n.is_read).length}
+                </span>
+              )}
+            </button>
+            
+            {showNotifications && (
+              <div className="absolute right-0 mt-2 w-72 bg-white border border-slate-200 p-2 rounded-2xl shadow-xl z-50 text-slate-700 max-h-80 overflow-y-auto">
+                <div className="text-xs font-bold text-slate-450 p-2 border-b uppercase tracking-wider">Notifications</div>
+                {notifications.length === 0 ? (
+                  <div className="text-xs text-slate-400 text-center py-4">No notifications</div>
+                ) : (
+                  notifications.map((n) => (
+                    <div 
+                      key={n.id} 
+                      onClick={async () => {
+                        if (!n.is_read) {
+                          try {
+                            await apiFetch(`/api/notifications/${n.id}/read`, { method: 'POST' });
+                            setNotifications(prev => prev.map(item => item.id === n.id ? { ...item, is_read: true } : item));
+                          } catch (e) {
+                            console.error(e);
+                          }
+                        }
+                      }}
+                      className={`p-2 hover:bg-slate-50 rounded-xl transition-colors cursor-pointer border-b border-slate-50 last:border-none flex gap-2 ${!n.is_read ? 'bg-emerald-50/40' : ''}`}
+                    >
+                      <div className="flex-1">
+                        <div className="text-xs font-bold text-slate-800 flex justify-between">
+                          <span>{n.title}</span>
+                          {!n.is_read && <span className="h-1.5 w-1.5 bg-emerald-600 rounded-full mt-1.5" />}
+                        </div>
+                        <div className="text-[10px] text-slate-500 mt-0.5">{n.message}</div>
+                        <div className="text-[8px] text-slate-400 font-mono mt-1">{new Date(n.created_at).toLocaleString()}</div>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
             )}
           </div>
 
@@ -1229,25 +1327,69 @@ const FarmerDashboard: React.FC = () => {
                             <p className="text-xs text-slate-400 mt-1">{t('visual_assessment_desc')}</p>
                           </div>
 
-                          {/* Image Source Selection Toggle */}
-                          <div className="flex bg-slate-100 p-1.5 rounded-xl gap-1">
-                            <button
-                              type="button"
-                              onClick={() => setImageSourceOption('live')}
-                              className={`flex-1 text-center py-2 text-xs font-bold rounded-lg transition-all cursor-pointer ${imageSourceOption === 'live' ? 'bg-white text-emerald-700 shadow-sm' : 'text-slate-500 hover:text-slate-800'
-                                }`}
-                            >
-                              {t('capture_photo_option')}
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => setImageSourceOption('upload')}
-                              className={`flex-1 text-center py-2 text-xs font-bold rounded-lg transition-all cursor-pointer ${imageSourceOption === 'upload' ? 'bg-white text-emerald-700 shadow-sm' : 'text-slate-500 hover:text-slate-800'
-                                }`}
-                            >
-                              {t('upload_photo_option')}
-                            </button>
-                          </div>
+                          {/* Hidden File Input for Local Upload */}
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={handleLocalImageUpload}
+                            className="hidden"
+                            id="local-upload-input"
+                          />
+
+                          {/* Image Selector Dialog Modal */}
+                          {imageSourceModalOpen && (
+                            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 px-4">
+                              <motion.div
+                                initial={{ scale: 0.95, opacity: 0 }}
+                                animate={{ scale: 1, opacity: 1 }}
+                                exit={{ scale: 0.95, opacity: 0 }}
+                                className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 w-full max-w-sm relative text-slate-800 dark:text-slate-100 shadow-2xl"
+                              >
+                                <h4 className="text-sm font-bold mb-2 border-b pb-2 dark:border-slate-800">Select Image Source</h4>
+                                <p className="text-xs text-slate-400 mb-6 leading-relaxed">Choose whether you want to upload a crop quality image from your device or take a live photo.</p>
+                                
+                                <div className="space-y-3">
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setImageSourceModalOpen(false);
+                                      document.getElementById('local-upload-input')?.click();
+                                    }}
+                                    className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-xl text-xs uppercase tracking-wider shadow cursor-pointer flex items-center justify-center gap-2"
+                                  >
+                                    <Upload className="h-4 w-4" />
+                                    Upload from Device
+                                  </button>
+                                  
+                                  <button
+                                    type="button"
+                                    onClick={async () => {
+                                      setImageSourceModalOpen(false);
+                                      try {
+                                        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                                        stream.getTracks().forEach(t => t.stop());
+                                        openCamera('close_up');
+                                      } catch (e) {
+                                        alert('Camera access denied or unavailable. Please check permissions.');
+                                      }
+                                    }}
+                                    className="w-full bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-300 font-bold py-3 rounded-xl text-xs uppercase tracking-wider cursor-pointer flex items-center justify-center gap-2"
+                                  >
+                                    <Camera className="h-4 w-4" />
+                                    Capture Photo
+                                  </button>
+                                </div>
+
+                                <button
+                                  type="button"
+                                  onClick={() => setImageSourceModalOpen(false)}
+                                  className="absolute right-4 top-4 text-slate-400 hover:text-slate-700 dark:hover:text-slate-250 cursor-pointer border-none bg-transparent"
+                                >
+                                  <X className="h-5 w-5" />
+                                </button>
+                              </motion.div>
+                            </div>
+                          )}
 
                           {/* Single Image Area */}
                           <div className="border border-dashed border-slate-200 rounded-2xl p-4 flex flex-col items-center justify-center min-h-[220px] relative overflow-hidden bg-slate-50/30">
@@ -1259,7 +1401,7 @@ const FarmerDashboard: React.FC = () => {
                                 const longitude = imgObj ? imgObj.gps_longitude : gpsData.lng;
                                 const locationName = imgObj ? imgObj.gps_location_name : gpsData.loc;
                                 const timestamp = imgObj ? imgObj.created_at : new Date().toISOString();
-                                const source = imgObj ? (imgObj.image_source || 'Live Capture') : (imageSourceOption === 'live' ? 'Live Capture' : 'Local Upload');
+                                const source = imgObj ? (imgObj.image_source || 'Live Capture') : (capturedImages['close_up']?.startsWith('data:image/') ? 'Live Capture' : 'Local Upload');
 
                                 return (
                                   <div className="w-full space-y-4">
@@ -1291,38 +1433,36 @@ const FarmerDashboard: React.FC = () => {
                                         <span className="text-slate-700">{new Date(timestamp).toLocaleString()}</span>
                                       </p>
                                     </div>
+
+                                    <div className="flex gap-2">
+                                      <button
+                                        type="button"
+                                        onClick={() => setImageSourceModalOpen(true)}
+                                        className="flex-1 bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 font-bold py-2 rounded-xl text-xs uppercase cursor-pointer"
+                                      >
+                                        Retake Photo
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => handleDeleteImage('close_up')}
+                                        className="flex-1 bg-red-50 hover:bg-red-100 border border-red-200 text-red-650 font-bold py-2 rounded-xl text-xs uppercase cursor-pointer"
+                                      >
+                                        Remove Image
+                                      </button>
+                                    </div>
                                   </div>
                                 );
                               })()
                             ) : (
                               <div className="text-center py-6">
-                                {imageSourceOption === 'live' ? (
-                                  <button
-                                    type="button"
-                                    onClick={() => openCamera('close_up')}
-                                    className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-extrabold px-5 py-2.5 rounded-xl shadow-md transition-all inline-flex items-center gap-2 cursor-pointer"
-                                  >
-                                    <Camera className="h-4 w-4" />
-                                    {t('camera_btn')}
-                                  </button>
-                                ) : (
-                                  <>
-                                    <input
-                                      type="file"
-                                      accept="image/*"
-                                      onChange={handleLocalImageUpload}
-                                      className="hidden"
-                                      id="local-upload-input"
-                                    />
-                                    <label
-                                      htmlFor="local-upload-input"
-                                      className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-extrabold px-5 py-2.5 rounded-xl shadow-md transition-all inline-flex items-center gap-2 cursor-pointer"
-                                    >
-                                      <Upload className="h-4 w-4" />
-                                      {t('select_image_file')}
-                                    </label>
-                                  </>
-                                )}
+                                <button
+                                  type="button"
+                                  onClick={() => setImageSourceModalOpen(true)}
+                                  className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-extrabold px-5 py-2.5 rounded-xl shadow-md transition-all inline-flex items-center gap-2 cursor-pointer border-none"
+                                >
+                                  <Camera className="h-4 w-4" />
+                                  Capture or Upload Photo
+                                </button>
                                 <p className="text-[10px] text-slate-450 mt-3 font-semibold">Moisture and grain uniformity prediction uses computer vision</p>
                               </div>
                             )}
