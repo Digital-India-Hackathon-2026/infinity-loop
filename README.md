@@ -7,7 +7,7 @@ Farmer2Gov bridges the gap between farmers and government agencies. It digitizes
 
 ## 🏛️ Project Architecture
 
-The project has a decoupled architecture, with a FastAPI backend and a React (Vite) + Tailwind CSS frontend.
+The project has a decoupled architecture, with a FastAPI backend and the React (Vite) + Tailwind CSS frontend.
 
 ```text
 Farmer2Gov/
