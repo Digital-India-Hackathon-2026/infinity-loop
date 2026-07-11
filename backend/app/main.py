@@ -40,13 +40,22 @@ app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 # --- HELPER FUNCTIONS ---
 def generate_registration_id(db: Session) -> str:
     year = datetime.datetime.utcnow().year
-    count = db.query(models.CropRegistration).count()
-    return f"F2G-PH-{year}-{1001 + count}"
+    suffix = 1001
+    while True:
+        candidate = f"F2G-PH-{year}-{suffix}"
+        if not db.query(models.CropRegistration).filter(models.CropRegistration.registration_number == candidate).first():
+            return candidate
+        suffix += 1
 
 def generate_procurement_id(db: Session) -> str:
     year = datetime.datetime.utcnow().year
-    count = db.query(models.Procurement).count()
-    return f"F2G-PR-{year}-{5001 + count}"
+    suffix = 5001
+    while True:
+        candidate = f"F2G-PR-{year}-{suffix}"
+        if not db.query(models.Procurement).filter(models.Procurement.procurement_number == candidate).first():
+            return candidate
+        suffix += 1
+
 
 def add_notification(db: Session, user_id: int, title: str, message: str, notif_type: str = "general"):
     notification = models.Notification(

@@ -5,7 +5,7 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   ShoppingBag, Search, Filter, Star, Heart, MapPin,
-  Award, User, LogOut, Loader2, Sparkles, Bell, Languages
+  Award, User, Loader2, Sparkles, Bell, Languages
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
@@ -43,7 +43,7 @@ const categoriesList = [
 const CustomerDashboard: React.FC = () => {
   const navigate = useNavigate();
   const { name, apiFetch, logout } = useAuth();
-  const { t, language, setLanguage } = useLanguage();
+  const { language, setLanguage } = useLanguage();
 
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(false);

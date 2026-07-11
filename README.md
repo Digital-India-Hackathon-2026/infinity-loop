@@ -45,88 +45,69 @@ Follow these steps to set up and run the application on your computer.
 Make sure you have the following installed:
 1. **Python 3.10+** (Download from [python.org](https://www.python.org/downloads/))
 2. **Node.js v18+** (Download from [nodejs.org](https://nodejs.org/))
+3. **VS Code** (Download from [code.visualstudio.com](https://code.visualstudio.com/))
 
 ---
 
-### 🐍 Step 1: Backend Setup
+## 💻 Running the App in VS Code (Step-by-Step)
 
-Open a terminal or command prompt and run the following commands:
+VS Code provides built-in terminal splits so you can run the backend and frontend side-by-side. 
 
-1. **Navigate to the backend directory:**
-   ```bash
+### Terminal 1: Backend Setup
+1. **Open VS Code** and open the `Farmer2Gov` folder.
+2. Open a new terminal (`Ctrl + Shift + ~` or go to **Terminal -> New Terminal** in the top menu).
+3. Navigate to the backend directory:
+   ```powershell
    cd backend
    ```
-
-2. **Create a virtual environment:**
-   * **Windows:**
-     ```powershell
-     python -m venv venv
-     ```
-   * **macOS/Linux:**
-     ```bash
-     python3 -m venv venv
-     ```
-
-3. **Activate the virtual environment:**
-   * **Windows (Command Prompt):**
-     ```cmd
-     venv\Scripts\activate.bat
-     ```
+4. Create a virtual environment:
+   ```powershell
+   python -m venv venv
+   ```
+5. Activate the virtual environment:
    * **Windows (PowerShell):**
      ```powershell
      .\venv\Scripts\Activate.ps1
      ```
-     *(If you get a script execution policy error, run `Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass` first, then run the activation script.)*
+     *(If you get a script execution policy error, run `Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass` in an Administrator PowerShell once, then activate again)*
    * **macOS/Linux:**
      ```bash
      source venv/bin/activate
      ```
-
-4. **Install backend dependencies:**
-   ```bash
+6. Install dependencies:
+   ```powershell
    pip install -r requirements.txt
    ```
-
-5. **Initialize and Seed the Database:**
-   This creates the tables and seeds 100 farmers, 20 officers, and 1 admin.
-   ```bash
+7. Seed the database with sample farmers, officers, and admins:
+   ```powershell
    python seed.py
    ```
-
-6. **Apply SQLite Migrations:**
-   Add required additional columns and verification tables to the database.
-   ```bash
+8. Apply the SQLite database migrations:
+   ```powershell
    python migrate.py
    ```
-
-7. **Start the FastAPI Server:**
-   ```bash
+9. Start the FastAPI development server:
+   ```powershell
    uvicorn app.main:app --reload --port 8000
    ```
-   * The API server will be available at [http://localhost:8000](http://localhost:8000).
-   * Interactive API docs (Swagger UI) will be available at [http://localhost:8000/docs](http://localhost:8000/docs).
+   * *Backend API will run at http://localhost:8000*
+   * *Swagger interactive docs will be available at http://localhost:8000/docs*
 
----
-
-### 🎨 Step 2: Frontend Setup
-
-Open a **new** terminal window (keep the backend terminal running) and run the following commands:
-
-1. **Navigate to the frontend directory:**
-   ```bash
+### Terminal 2: Frontend Setup
+1. Open a **second terminal split** in VS Code (click the **Split Terminal** icon `\ \| /` in the top right of the terminal panel, or open a new terminal window).
+2. Navigate to the frontend directory:
+   ```powershell
    cd frontend
    ```
-
-2. **Install npm dependencies:**
-   ```bash
+3. Install npm packages:
+   ```powershell
    npm install
    ```
-
-3. **Start the React development server:**
-   ```bash
+4. Run the frontend development server:
+   ```powershell
    npm run dev
    ```
-   * The application will open in your browser at [http://localhost:5173](http://localhost:5173).
+   * *Frontend React app will open at http://localhost:5173*
 
 ---
 
@@ -172,6 +153,47 @@ To experience the full capability of the application, follow these user journeys
 4. **Place Order**: Confirm your shipping coordinates, select a mock payment option (UPI/Card/COD), and click "Pay & Place Order".
 5. **View Invoice & Track Order**: Review your printable tax invoice, click "Track Order Live" to view the interactive Leaflet map showing the delivery courier rider's location and shipping checkpoints.
 6. **Farmer Fulfillment**: Log in as a Farmer (phone `9876543201`, OTP `123456`), go to the **"Marketplace Portal"** tab, verify the customer order, and change its status from "Pending" to "Confirmed" and then "Shipped".
+
+---
+
+## 🌐 Deployment Steps (Beginner Friendly)
+
+Here is how you can deploy the complete project to the web for free.
+
+### 🗄️ 1. Deploy the Backend (FastAPI + SQLite Fallback)
+The easiest way to deploy python APIs is via **Render** or **Railway**.
+
+#### Deploying on Render (Free Tier):
+1. Create a free account on [Render.com](https://render.com/).
+2. Push your codebase to a **GitHub** repository.
+3. On the Render Dashboard, click **New +** and select **Web Service**.
+4. Connect your GitHub repository.
+5. Configure the Web Service settings:
+   * **Language:** `Python 3`
+   * **Root Directory:** `backend`
+   * **Build Command:** `pip install -r requirements.txt`
+   * **Start Command:** `python seed.py && python migrate.py && uvicorn app.main:app --host 0.0.0.0 --port $PORT`
+6. Click **Deploy**. Render will host your backend and provide a public URL (e.g. `https://farmer2gov-api.onrender.com`).
+
+---
+
+### 🎨 2. Deploy the Frontend (React + Vite)
+The easiest way to deploy React static sites is via **Vercel** or **Netlify**.
+
+#### Before deploying:
+Make sure you update the backend URL in the frontend:
+* Open `frontend/src/contexts/AuthContext.tsx` and change `const API_BASE_URL = 'http://localhost:8000';` to your live deployed backend URL (e.g. `https://farmer2gov-api.onrender.com`).
+* Update the base URLs in [Login.tsx](file:///c:/Users/gasik/Desktop/Farmer2Gov/frontend/src/pages/Login.tsx), [Register.tsx](file:///c:/Users/gasik/Desktop/Farmer2Gov/frontend/src/pages/Register.tsx), and [RegisterCustomer.tsx](file:///c:/Users/gasik/Desktop/Farmer2Gov/frontend/src/pages/RegisterCustomer.tsx) if necessary, or let them dynamically consume config variables.
+
+#### Deploying on Vercel:
+1. Create a free account on [Vercel.com](https://vercel.com/).
+2. Click **Add New** -> **Project** and import your GitHub repository.
+3. Configure the settings:
+   * **Framework Preset:** `Vite`
+   * **Root Directory:** `frontend`
+   * **Build Command:** `npm run build`
+   * **Output Directory:** `dist`
+4. Click **Deploy**. Vercel will build and serve your app.
 
 ---
 

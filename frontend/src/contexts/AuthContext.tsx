@@ -71,17 +71,37 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       headers.set('Content-Type', 'application/json');
     }
 
-    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-      ...options,
-      headers,
-    });
+    try {
+      const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+        ...options,
+        headers,
+      });
 
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({ detail: 'Network response was not ok' }));
-      throw new Error(errorData.detail || 'An error occurred');
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ detail: 'Network response was not ok' }));
+        let errMsg = 'An error occurred';
+        if (errorData && errorData.detail) {
+          if (typeof errorData.detail === 'string') {
+            errMsg = errorData.detail;
+          } else if (Array.isArray(errorData.detail)) {
+            errMsg = errorData.detail.map((err: any) => {
+              const loc = err.loc ? err.loc.join('.') : 'field';
+              return `${loc}: ${err.msg}`;
+            }).join(', ');
+          } else {
+            errMsg = JSON.stringify(errorData.detail);
+          }
+        }
+        throw new Error(errMsg);
+      }
+
+      return response.json();
+    } catch (error: any) {
+      if (error instanceof TypeError && error.message === 'Failed to fetch') {
+        throw new Error(`Failed to fetch from backend at ${API_BASE_URL}. Please ensure the FastAPI server is running on port 8000.`);
+      }
+      throw error;
     }
-
-    return response.json();
   };
 
   const isAuthenticated = !!token;

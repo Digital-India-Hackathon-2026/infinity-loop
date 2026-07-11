@@ -88,7 +88,6 @@ const FarmerDashboard: React.FC = () => {
   const { logout, apiFetch, name } = useAuth();
   const { t, language, setLanguage } = useLanguage();
   const [showNotifications, setShowNotifications] = useState(false);
-  const [profile, setProfile] = useState<any>(null);
 
   // Navigation / Tab states
   const [activeTab, setActiveTab] = useState<'overview' | 'register' | 'register-produce' | 'msp' | 'procurement' | 'booking' | 'marketplace'>('overview');
@@ -156,7 +155,6 @@ const FarmerDashboard: React.FC = () => {
   const [slotTime, setSlotTime] = useState('09:00 AM - 11:00 AM');
   const [selectedBookingRegId, setSelectedBookingRegId] = useState('');
   const [bookedProcurement, setBookedProcurement] = useState<any | null>(null);
-  const [imageSourceOption, setImageSourceOption] = useState<'live' | 'upload'>('live');
 
   // Voice Assistant states
   const [voiceActive, setVoiceActive] = useState(false);
@@ -369,7 +367,6 @@ const FarmerDashboard: React.FC = () => {
 
       // Retrieve profile
       const userProfile = await apiFetch('/api/auth/me');
-      setProfile(userProfile);
       if (userProfile) {
         setFormData(prev => ({
           ...prev,
